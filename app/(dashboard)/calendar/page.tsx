@@ -57,7 +57,7 @@ export default function CalendarPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          article_id: selectedArticle.id,
+          article_id: selectedArticle?.id ?? 0,
           publish_date: scheduleData.date,
           publish_time: scheduleData.time,
           platforms: scheduleData.platforms
