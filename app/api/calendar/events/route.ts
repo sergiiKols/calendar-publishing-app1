@@ -7,6 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createCalendarEvent, getCalendarEvents } from '@/lib/db/client';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -44,16 +46,40 @@ export async function POST(request: NextRequest) {
     }
 
     // Создаём событие
-    const event = await createCalendarEvent({
+    const result = await createCalendarEvent({
       article_id,
       publish_date,
       publish_time,
       platforms
     });
 
+    // Отправляем маркер обратно в SMI проект (если он есть)
+    if (result.arrival_token && process.env.SMI_CALLBACK_URL) {
+      try {
+        await fetch(process.env.SMI_CALLBACK_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': process.env.CALENDAR_API_KEY || ''
+          },
+          body: JSON.stringify({
+            arrival_token: result.arrival_token,
+            status: 'scheduled',
+            scheduled_date: publish_date,
+            scheduled_time: publish_time,
+            platforms: platforms
+          })
+        });
+      } catch (callbackError) {
+        console.error('Failed to send callback to SMI:', callbackError);
+        // Не прерываем выполнение, если callback не удался
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      event
+      event: result.event,
+      arrival_token: result.arrival_token
     }, { status: 201 });
 
   } catch (error: any) {

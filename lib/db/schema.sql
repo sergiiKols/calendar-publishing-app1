@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS inbox_articles (
   images JSONB DEFAULT '[]',
   status VARCHAR(20) DEFAULT 'inbox', -- inbox, scheduled, published
   source_project VARCHAR(100), -- откуда пришла статья
+  arrival_token VARCHAR(255), -- маркер прибытия статьи для обратной связи
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );

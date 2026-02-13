@@ -33,14 +33,16 @@ export async function createInboxArticle(data: {
   content: string;
   images?: string[];
   source_project?: string;
+  arrival_token?: string;
 }) {
   const result = await sql`
-    INSERT INTO inbox_articles (title, content, images, source_project)
+    INSERT INTO inbox_articles (title, content, images, source_project, arrival_token)
     VALUES (
       ${data.title},
       ${data.content},
       ${JSON.stringify(data.images || [])},
-      ${data.source_project || 'unknown'}
+      ${data.source_project || 'unknown'},
+      ${data.arrival_token || null}
     )
     RETURNING *
   `;
@@ -105,13 +107,19 @@ export async function createCalendarEvent(data: {
   // Обновляем статус статьи на 'scheduled'
   await updateArticleStatus(data.article_id, 'scheduled');
   
-  return result.rows[0];
+  // Получаем информацию о статье для отправки маркера обратно
+  const article = await getArticleById(data.article_id);
+  
+  return {
+    event: result.rows[0],
+    arrival_token: article.arrival_token // Возвращаем маркер для отправки обратно
+  };
 }
 
 export async function getCalendarEvents(month?: number, year?: number) {
   if (month && year) {
     const result = await sql`
-      SELECT ce.*, ia.title, ia.content, ia.images
+      SELECT ce.*, ia.title, ia.content, ia.images, ia.source_project, ia.created_at as article_created_at
       FROM calendar_events ce
       JOIN inbox_articles ia ON ce.article_id = ia.id
       WHERE EXTRACT(MONTH FROM publish_date) = ${month}
@@ -122,7 +130,7 @@ export async function getCalendarEvents(month?: number, year?: number) {
   }
   
   const result = await sql`
-    SELECT ce.*, ia.title, ia.content, ia.images
+    SELECT ce.*, ia.title, ia.content, ia.images, ia.source_project, ia.created_at as article_created_at
     FROM calendar_events ce
     JOIN inbox_articles ia ON ce.article_id = ia.id
     ORDER BY publish_date, publish_time

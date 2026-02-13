@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, content, images, source_project } = body;
+    const { title, content, images, source_project, arrival_token } = body;
 
     // Валидация
     if (!title || !content) {
@@ -33,16 +33,19 @@ export async function POST(request: NextRequest) {
       title,
       content,
       images: images || [],
-      source_project: source_project || 'smi_unknown'
+      source_project: source_project || 'smi_unknown',
+      arrival_token: arrival_token || null
     });
 
     return NextResponse.json({
       success: true,
+      arrival_marker: arrival_token, // Возвращаем маркер прибытия
       article: {
         id: article.id,
         title: article.title,
         status: article.status,
-        created_at: article.created_at
+        created_at: article.created_at,
+        arrival_token: article.arrival_token
       }
     }, { status: 201 });
 

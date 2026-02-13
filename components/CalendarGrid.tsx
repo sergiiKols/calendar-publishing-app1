@@ -1,15 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import ArticleViewModal from './ArticleViewModal';
 
 interface CalendarEvent {
   id: number;
   article_id: number;
   title: string;
+  content: string;
+  images: string[] | any;
   publish_date: string;
   publish_time: string;
   platforms: string[];
   status: string;
+  created_at: string;
+  source_project?: string;
 }
 
 interface CalendarGridProps {
@@ -20,6 +25,7 @@ interface CalendarGridProps {
 
 export default function CalendarGrid({ events, month, year }: CalendarGridProps) {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [showArticleModal, setShowArticleModal] = useState(false);
 
   // Получаем количество дней в месяце
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -126,7 +132,7 @@ export default function CalendarGrid({ events, month, year }: CalendarGridProps)
       </div>
 
       {/* Event Details Modal */}
-      {selectedEvent && (
+      {selectedEvent && !showArticleModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full m-4">
             <div className="p-4 border-b border-gray-200">
@@ -162,16 +168,41 @@ export default function CalendarGrid({ events, month, year }: CalendarGridProps)
                 <p className="text-gray-900 capitalize">{selectedEvent.status}</p>
               </div>
             </div>
-            <div className="p-4 border-t border-gray-200">
+            <div className="p-4 border-t border-gray-200 flex gap-3">
               <button
                 onClick={() => setSelectedEvent(null)}
-                className="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded transition"
+                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded transition"
               >
                 Close
+              </button>
+              <button
+                onClick={() => setShowArticleModal(true)}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded transition font-medium"
+              >
+                Открыть статью
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Article View Modal */}
+      {selectedEvent && showArticleModal && (
+        <ArticleViewModal
+          article={{
+            id: selectedEvent.article_id,
+            title: selectedEvent.title,
+            content: selectedEvent.content,
+            images: selectedEvent.images,
+            status: selectedEvent.status,
+            created_at: selectedEvent.created_at || new Date().toISOString(),
+            source_project: selectedEvent.source_project
+          }}
+          onClose={() => {
+            setShowArticleModal(false);
+            setSelectedEvent(null);
+          }}
+        />
       )}
     </div>
   );
