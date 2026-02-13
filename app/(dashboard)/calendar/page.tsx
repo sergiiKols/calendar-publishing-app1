@@ -79,24 +79,43 @@ export default function CalendarPage() {
 
   const handleScheduleSubmit = async (scheduleData: any) => {
     try {
+      // Проверка данных перед отправкой
+      if (!selectedArticle?.id) {
+        alert('Ошибка: статья не выбрана');
+        return;
+      }
+
+      if (!scheduleData.date || !scheduleData.time || !scheduleData.platforms || scheduleData.platforms.length === 0) {
+        alert('Пожалуйста, заполните все поля');
+        return;
+      }
+
       const response = await fetch('/api/calendar/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          article_id: selectedArticle?.id ?? 0,
+          article_id: selectedArticle.id,
           publish_date: scheduleData.date,
           publish_time: scheduleData.time,
           platforms: scheduleData.platforms
         })
       });
 
+      const data = await response.json();
+
       if (response.ok) {
         setShowScheduleModal(false);
+        setSelectedArticle(null);
         loadInboxArticles();
         loadCalendarEvents();
+        alert('Статья успешно добавлена в календарь!');
+      } else {
+        console.error('Server error:', data);
+        alert(`Ошибка при планировании: ${data.error || 'Неизвестная ошибка'}\n${data.details || ''}`);
       }
     } catch (error) {
       console.error('Error scheduling article:', error);
+      alert('Ошибка сети при планировании статьи');
     }
   };
 
