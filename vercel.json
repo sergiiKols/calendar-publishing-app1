@@ -1,8 +1,1 @@
-{
-  "env": {
-    "POSTGRES_URL": "@postgres_url",
-    "NEXTAUTH_SECRET": "@nextauth_secret",
-    "CALENDAR_API_KEY": "@calendar_api_key",
-    "CRON_SECRET": "@cron_secret"
-  }
-}
+{}
