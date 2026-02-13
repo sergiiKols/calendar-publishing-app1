@@ -58,6 +58,25 @@ export default function CalendarPage() {
     setShowArticleModal(true);
   };
 
+  const handleDeleteArticle = async (article: any) => {
+    if (confirm(`Удалить статью "${article.title}"? Это действие нельзя отменить.`)) {
+      try {
+        const response = await fetch(`/api/articles/inbox?id=${article.id}`, {
+          method: 'DELETE'
+        });
+        if (response.ok) {
+          loadInboxArticles();
+          loadCalendarEvents();
+        } else {
+          alert('Ошибка при удалении статьи');
+        }
+      } catch (error) {
+        console.error('Error deleting article:', error);
+        alert('Ошибка при удалении статьи');
+      }
+    }
+  };
+
   const handleScheduleSubmit = async (scheduleData: any) => {
     try {
       const response = await fetch('/api/calendar/events', {
@@ -165,6 +184,7 @@ export default function CalendarPage() {
                 articles={inboxArticles}
                 onArticleClick={handleArticleClick}
                 onViewClick={handleViewArticle}
+                onDeleteClick={handleDeleteArticle}
               />
             </div>
           </div>
@@ -238,6 +258,24 @@ export default function CalendarPage() {
           onClose={() => {
             setShowArticleModal(false);
             setSelectedArticle(null);
+          }}
+          onDelete={async (articleId) => {
+            try {
+              const response = await fetch(`/api/articles/inbox?id=${articleId}`, {
+                method: 'DELETE'
+              });
+              if (response.ok) {
+                setShowArticleModal(false);
+                setSelectedArticle(null);
+                loadInboxArticles();
+                loadCalendarEvents();
+              } else {
+                alert('Ошибка при удалении статьи');
+              }
+            } catch (error) {
+              console.error('Error deleting article:', error);
+              alert('Ошибка при удалении статьи');
+            }
           }}
         />
       )}

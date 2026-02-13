@@ -168,19 +168,44 @@ export default function CalendarGrid({ events, month, year }: CalendarGridProps)
                 <p className="text-gray-900 capitalize">{selectedEvent.status}</p>
               </div>
             </div>
-            <div className="p-4 border-t border-gray-200 flex gap-3">
-              <button
-                onClick={() => setSelectedEvent(null)}
-                className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded transition"
-              >
-                Close
-              </button>
-              <button
-                onClick={() => setShowArticleModal(true)}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded transition font-medium"
-              >
-                Открыть статью
-              </button>
+            <div className="p-4 border-t border-gray-200">
+              <div className="flex gap-3 mb-3">
+                <button
+                  onClick={() => setShowArticleModal(true)}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded transition font-medium"
+                >
+                  Открыть статью
+                </button>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setSelectedEvent(null)}
+                  className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded transition"
+                >
+                  Закрыть
+                </button>
+                <button
+                  onClick={async () => {
+                    if (confirm('Удалить это событие из календаря? Статья вернется в Inbox.')) {
+                      try {
+                        const response = await fetch(`/api/calendar/events?id=${selectedEvent.id}`, {
+                          method: 'DELETE'
+                        });
+                        if (response.ok) {
+                          setSelectedEvent(null);
+                          window.location.reload();
+                        }
+                      } catch (error) {
+                        console.error('Error deleting event:', error);
+                        alert('Ошибка при удалении события');
+                      }
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded transition font-medium"
+                >
+                  Удалить из календаря
+                </button>
+              </div>
             </div>
           </div>
         </div>

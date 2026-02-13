@@ -1,6 +1,6 @@
 'use client';
 
-import { FileText, Calendar, CheckCircle, Eye } from 'lucide-react';
+import { FileText, Calendar, CheckCircle, Eye, Trash2 } from 'lucide-react';
 
 interface Article {
   id: number;
@@ -16,9 +16,10 @@ interface InboxTableProps {
   articles: Article[];
   onArticleClick: (article: Article) => void;
   onViewClick?: (article: Article) => void;
+  onDeleteClick?: (article: Article) => void;
 }
 
-export default function InboxTable({ articles, onArticleClick, onViewClick }: InboxTableProps) {
+export default function InboxTable({ articles, onArticleClick, onViewClick, onDeleteClick }: InboxTableProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'inbox':
@@ -80,18 +81,32 @@ export default function InboxTable({ articles, onArticleClick, onViewClick }: In
                     </span>
                   </div>
                 </div>
-                {onViewClick && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onViewClick(article);
-                    }}
-                    className="flex-shrink-0 p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                    title="Просмотр статьи"
-                  >
-                    <Eye size={18} />
-                  </button>
-                )}
+                <div className="flex gap-2">
+                  {onViewClick && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewClick(article);
+                      }}
+                      className="flex-shrink-0 p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                      title="Просмотр статьи"
+                    >
+                      <Eye size={18} />
+                    </button>
+                  )}
+                  {onDeleteClick && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteClick(article);
+                      }}
+                      className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                      title="Удалить статью"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}

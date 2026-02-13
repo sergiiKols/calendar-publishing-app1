@@ -83,6 +83,14 @@ export async function getArticleById(articleId: number) {
   return result.rows[0];
 }
 
+export async function deleteArticle(articleId: number) {
+  const result = await sql`
+    DELETE FROM inbox_articles WHERE id = ${articleId}
+    RETURNING *
+  `;
+  return result.rows[0];
+}
+
 // ================================
 // CALENDAR EVENTS
 // ================================
@@ -166,6 +174,30 @@ export async function updateEventStatus(eventId: number, status: string) {
     RETURNING *
   `;
   return result.rows[0];
+}
+
+export async function deleteCalendarEvent(eventId: number) {
+  // Сначала получаем информацию о событии
+  const event = await sql`
+    SELECT article_id FROM calendar_events WHERE id = ${eventId}
+  `;
+  
+  if (event.rows.length > 0) {
+    const articleId = event.rows[0].article_id;
+    
+    // Удаляем событие
+    const result = await sql`
+      DELETE FROM calendar_events WHERE id = ${eventId}
+      RETURNING *
+    `;
+    
+    // Обновляем статус статьи обратно на 'inbox'
+    await updateArticleStatus(articleId, 'inbox');
+    
+    return result.rows[0];
+  }
+  
+  return null;
 }
 
 // ================================

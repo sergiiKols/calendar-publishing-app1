@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Save, Image as ImageIcon } from 'lucide-react';
+import { X, Save, Image as ImageIcon, Trash2 } from 'lucide-react';
 
 interface ArticleViewModalProps {
   article: {
@@ -15,9 +15,10 @@ interface ArticleViewModalProps {
   };
   onClose: () => void;
   onSave?: (updatedArticle: any) => void;
+  onDelete?: (articleId: number) => void;
 }
 
-export default function ArticleViewModal({ article, onClose, onSave }: ArticleViewModalProps) {
+export default function ArticleViewModal({ article, onClose, onSave, onDelete }: ArticleViewModalProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(article.title);
   const [editedContent, setEditedContent] = useState(article.content);
@@ -149,9 +150,24 @@ export default function ArticleViewModal({ article, onClose, onSave }: ArticleVi
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
-          <div className="text-sm text-gray-500">
-            ID: {article.id}
+        <div className="p-4 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-sm text-gray-500">
+              ID: {article.id}
+            </div>
+            {onDelete && !isEditing && (
+              <button
+                onClick={() => {
+                  if (confirm('Вы уверены, что хотите удалить эту статью? Это действие нельзя отменить.')) {
+                    onDelete(article.id);
+                  }
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+              >
+                <Trash2 size={18} />
+                Удалить статью
+              </button>
+            )}
           </div>
           <div className="flex gap-3">
             {isEditing ? (
@@ -162,13 +178,13 @@ export default function ArticleViewModal({ article, onClose, onSave }: ArticleVi
                     setEditedContent(article.content);
                     setIsEditing(false);
                   }}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition"
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition"
                 >
                   Отмена
                 </button>
                 <button
                   onClick={handleSave}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                 >
                   <Save size={18} />
                   Сохранить
@@ -178,14 +194,14 @@ export default function ArticleViewModal({ article, onClose, onSave }: ArticleVi
               <>
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition"
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition"
                 >
                   Закрыть
                 </button>
                 {onSave && (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                   >
                     Редактировать
                   </button>

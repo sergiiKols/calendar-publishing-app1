@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createCalendarEvent, getCalendarEvents } from '@/lib/db/client';
+import { createCalendarEvent, getCalendarEvents, deleteCalendarEvent } from '@/lib/db/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -86,6 +86,41 @@ export async function POST(request: NextRequest) {
     console.error('Error creating calendar event:', error);
     return NextResponse.json(
       { error: 'Failed to create event', details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const eventId = searchParams.get('id');
+
+    if (!eventId) {
+      return NextResponse.json(
+        { error: 'Event ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const deletedEvent = await deleteCalendarEvent(parseInt(eventId));
+
+    if (!deletedEvent) {
+      return NextResponse.json(
+        { error: 'Event not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Event deleted successfully'
+    });
+
+  } catch (error: any) {
+    console.error('Error deleting calendar event:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete event', details: error.message },
       { status: 500 }
     );
   }
