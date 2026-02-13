@@ -227,6 +227,47 @@ export default function CalendarGrid({ events, month, year }: CalendarGridProps)
             setShowArticleModal(false);
             setSelectedEvent(null);
           }}
+          onSave={async (updatedArticle) => {
+            try {
+              const response = await fetch(`/api/articles/inbox?id=${updatedArticle.id}`, {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  title: updatedArticle.title,
+                  content: updatedArticle.content
+                })
+              });
+              
+              if (response.ok) {
+                alert('Статья успешно обновлена!');
+                window.location.reload();
+              } else {
+                alert('Ошибка при обновлении статьи');
+              }
+            } catch (error) {
+              console.error('Error updating article:', error);
+              alert('Ошибка при обновлении статьи');
+            }
+          }}
+          onDelete={async (articleId) => {
+            try {
+              const response = await fetch(`/api/articles/inbox?id=${articleId}`, {
+                method: 'DELETE'
+              });
+              if (response.ok) {
+                setShowArticleModal(false);
+                setSelectedEvent(null);
+                window.location.reload();
+              } else {
+                alert('Ошибка при удалении статьи');
+              }
+            } catch (error) {
+              console.error('Error deleting article:', error);
+              alert('Ошибка при удалении статьи');
+            }
+          }}
         />
       )}
     </div>
