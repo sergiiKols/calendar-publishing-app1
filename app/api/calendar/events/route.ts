@@ -103,13 +103,34 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const deletedEvent = await deleteCalendarEvent(parseInt(eventId));
+    const result = await deleteCalendarEvent(parseInt(eventId));
 
-    if (!deletedEvent) {
+    if (!result) {
       return NextResponse.json(
         { error: 'Event not found' },
         { status: 404 }
       );
+    }
+
+    // Отправляем callback в SMI проект что событие отменено
+    if (result.arrival_token && process.env.SMI_CALLBACK_URL) {
+      try {
+        await fetch(process.env.SMI_CALLBACK_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': process.env.CALENDAR_API_KEY || ''
+          },
+          body: JSON.stringify({
+            arrival_token: result.arrival_token,
+            status: 'cancelled',
+            message: 'Event removed from calendar, article returned to inbox'
+          })
+        });
+      } catch (callbackError) {
+        console.error('Failed to send cancellation callback to SMI:', callbackError);
+        // Не прерываем выполнение, если callback не удался
+      }
     }
 
     return NextResponse.json({

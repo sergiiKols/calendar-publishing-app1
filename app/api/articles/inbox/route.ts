@@ -87,13 +87,34 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const deletedArticle = await deleteArticle(parseInt(articleId));
+    const result = await deleteArticle(parseInt(articleId));
 
-    if (!deletedArticle) {
+    if (!result) {
       return NextResponse.json(
         { error: 'Article not found' },
         { status: 404 }
       );
+    }
+
+    // Отправляем callback в SMI проект что статья полностью удалена
+    if (result.arrival_token && process.env.SMI_CALLBACK_URL) {
+      try {
+        await fetch(process.env.SMI_CALLBACK_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': process.env.CALENDAR_API_KEY || ''
+          },
+          body: JSON.stringify({
+            arrival_token: result.arrival_token,
+            status: 'deleted',
+            message: 'Article permanently deleted from calendar app'
+          })
+        });
+      } catch (callbackError) {
+        console.error('Failed to send deletion callback to SMI:', callbackError);
+        // Не прерываем выполнение, если callback не удался
+      }
     }
 
     return NextResponse.json({

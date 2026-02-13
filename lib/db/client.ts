@@ -113,11 +113,23 @@ export async function updateArticle(articleId: number, data: { title?: string; c
 }
 
 export async function deleteArticle(articleId: number) {
+  // Сначала получаем информацию о статье включая токен
+  const article = await getArticleById(articleId);
+  
+  if (!article) {
+    return null;
+  }
+  
+  // Удаляем статью (CASCADE удалит связанные события)
   const result = await sql`
     DELETE FROM inbox_articles WHERE id = ${articleId}
     RETURNING *
   `;
-  return result.rows[0];
+  
+  return {
+    article: result.rows[0],
+    arrival_token: article.arrival_token // Возвращаем токен для callback
+  };
 }
 
 // ================================
@@ -206,13 +218,18 @@ export async function updateEventStatus(eventId: number, status: string) {
 }
 
 export async function deleteCalendarEvent(eventId: number) {
-  // Сначала получаем информацию о событии
+  // Сначала получаем информацию о событии и статье
   const event = await sql`
-    SELECT article_id FROM calendar_events WHERE id = ${eventId}
+    SELECT ce.*, ia.arrival_token 
+    FROM calendar_events ce
+    JOIN inbox_articles ia ON ce.article_id = ia.id
+    WHERE ce.id = ${eventId}
   `;
   
   if (event.rows.length > 0) {
-    const articleId = event.rows[0].article_id;
+    const eventData = event.rows[0];
+    const articleId = eventData.article_id;
+    const arrivalToken = eventData.arrival_token;
     
     // Удаляем событие
     const result = await sql`
@@ -223,7 +240,10 @@ export async function deleteCalendarEvent(eventId: number) {
     // Обновляем статус статьи обратно на 'inbox'
     await updateArticleStatus(articleId, 'inbox');
     
-    return result.rows[0];
+    return {
+      event: result.rows[0],
+      arrival_token: arrivalToken // Возвращаем токен для callback
+    };
   }
   
   return null;
