@@ -5,12 +5,14 @@ import { Calendar, Filter, Settings } from 'lucide-react';
 import InboxTable from '@/components/InboxTable';
 import CalendarGrid from '@/components/CalendarGrid';
 import ScheduleModal from '@/components/ScheduleModal';
+import ArticleViewModal from '@/components/ArticleViewModal';
 
 export default function CalendarPage() {
   const [inboxArticles, setInboxArticles] = useState([]);
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [selectedArticle, setSelectedArticle] = useState<any>(null);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showArticleModal, setShowArticleModal] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [statusFilter, setStatusFilter] = useState('all');
@@ -49,6 +51,11 @@ export default function CalendarPage() {
   const handleArticleClick = (article: any) => {
     setSelectedArticle(article);
     setShowScheduleModal(true);
+  };
+
+  const handleViewArticle = (article: any) => {
+    setSelectedArticle(article);
+    setShowArticleModal(true);
   };
 
   const handleScheduleSubmit = async (scheduleData: any) => {
@@ -157,6 +164,7 @@ export default function CalendarPage() {
               <InboxTable
                 articles={inboxArticles}
                 onArticleClick={handleArticleClick}
+                onViewClick={handleViewArticle}
               />
             </div>
           </div>
@@ -220,6 +228,17 @@ export default function CalendarPage() {
           article={selectedArticle}
           onClose={() => setShowScheduleModal(false)}
           onSubmit={handleScheduleSubmit}
+        />
+      )}
+
+      {/* Article View Modal */}
+      {showArticleModal && selectedArticle && (
+        <ArticleViewModal
+          article={selectedArticle}
+          onClose={() => {
+            setShowArticleModal(false);
+            setSelectedArticle(null);
+          }}
         />
       )}
     </div>

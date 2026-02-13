@@ -1,21 +1,24 @@
 'use client';
 
-import { FileText, Calendar, CheckCircle } from 'lucide-react';
+import { FileText, Calendar, CheckCircle, Eye } from 'lucide-react';
 
 interface Article {
   id: number;
   title: string;
   content: string;
+  images?: string[] | any;
   status: string;
   created_at: string;
+  source_project?: string;
 }
 
 interface InboxTableProps {
   articles: Article[];
   onArticleClick: (article: Article) => void;
+  onViewClick?: (article: Article) => void;
 }
 
-export default function InboxTable({ articles, onArticleClick }: InboxTableProps) {
+export default function InboxTable({ articles, onArticleClick, onViewClick }: InboxTableProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'inbox':
@@ -54,11 +57,13 @@ export default function InboxTable({ articles, onArticleClick }: InboxTableProps
           {articles.map((article) => (
             <div
               key={article.id}
-              onClick={() => onArticleClick(article)}
-              className="p-4 hover:bg-gray-50 cursor-pointer transition"
+              className="p-4 hover:bg-gray-50 transition"
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
+                <div 
+                  className="flex-1 min-w-0 cursor-pointer"
+                  onClick={() => onArticleClick(article)}
+                >
                   <h3 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
                     {article.title}
                   </h3>
@@ -75,6 +80,18 @@ export default function InboxTable({ articles, onArticleClick }: InboxTableProps
                     </span>
                   </div>
                 </div>
+                {onViewClick && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onViewClick(article);
+                    }}
+                    className="flex-shrink-0 p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                    title="Просмотр статьи"
+                  >
+                    <Eye size={18} />
+                  </button>
+                )}
               </div>
             </div>
           ))}
