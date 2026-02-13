@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getInboxArticles, deleteArticle } from '@/lib/db/client';
+import { getInboxArticles, deleteArticle, updateArticle } from '@/lib/db/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +25,51 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching inbox articles:', error);
     return NextResponse.json(
       { error: 'Failed to fetch articles', details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const articleId = searchParams.get('id');
+
+    if (!articleId) {
+      return NextResponse.json(
+        { error: 'Article ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const body = await request.json();
+    const { title, content } = body;
+
+    if (!title && !content) {
+      return NextResponse.json(
+        { error: 'At least one field (title or content) is required' },
+        { status: 400 }
+      );
+    }
+
+    const updatedArticle = await updateArticle(parseInt(articleId), { title, content });
+
+    if (!updatedArticle) {
+      return NextResponse.json(
+        { error: 'Article not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      article: updatedArticle
+    });
+
+  } catch (error: any) {
+    console.error('Error updating article:', error);
+    return NextResponse.json(
+      { error: 'Failed to update article', details: error.message },
       { status: 500 }
     );
   }

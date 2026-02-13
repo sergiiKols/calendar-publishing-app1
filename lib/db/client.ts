@@ -83,6 +83,35 @@ export async function getArticleById(articleId: number) {
   return result.rows[0];
 }
 
+export async function updateArticle(articleId: number, data: { title?: string; content?: string }) {
+  const updates = [];
+  const values = [];
+  
+  if (data.title !== undefined) {
+    updates.push(`title = $${updates.length + 1}`);
+    values.push(data.title);
+  }
+  
+  if (data.content !== undefined) {
+    updates.push(`content = $${updates.length + 1}`);
+    values.push(data.content);
+  }
+  
+  if (updates.length === 0) {
+    return await getArticleById(articleId);
+  }
+  
+  values.push(articleId);
+  
+  const result = await sql`
+    UPDATE inbox_articles 
+    SET title = ${data.title}, content = ${data.content}
+    WHERE id = ${articleId}
+    RETURNING *
+  `;
+  return result.rows[0];
+}
+
 export async function deleteArticle(articleId: number) {
   const result = await sql`
     DELETE FROM inbox_articles WHERE id = ${articleId}

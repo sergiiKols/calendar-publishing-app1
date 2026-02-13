@@ -259,6 +259,31 @@ export default function CalendarPage() {
             setShowArticleModal(false);
             setSelectedArticle(null);
           }}
+          onSave={async (updatedArticle) => {
+            try {
+              const response = await fetch(`/api/articles/inbox?id=${updatedArticle.id}`, {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  title: updatedArticle.title,
+                  content: updatedArticle.content
+                })
+              });
+              
+              if (response.ok) {
+                loadInboxArticles();
+                loadCalendarEvents();
+                alert('Статья успешно обновлена!');
+              } else {
+                alert('Ошибка при обновлении статьи');
+              }
+            } catch (error) {
+              console.error('Error updating article:', error);
+              alert('Ошибка при обновлении статьи');
+            }
+          }}
           onDelete={async (articleId) => {
             try {
               const response = await fetch(`/api/articles/inbox?id=${articleId}`, {
