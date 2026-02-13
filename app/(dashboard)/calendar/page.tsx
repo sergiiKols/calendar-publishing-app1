@@ -9,7 +9,7 @@ import ScheduleModal from '@/components/ScheduleModal';
 export default function CalendarPage() {
   const [inboxArticles, setInboxArticles] = useState([]);
   const [calendarEvents, setCalendarEvents] = useState([]);
-  const [selectedArticle, setSelectedArticle] = useState(null);
+  const [selectedArticle, setSelectedArticle] = useState<any>(null);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
