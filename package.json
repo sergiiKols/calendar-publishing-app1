@@ -1,0 +1,44 @@
+{
+  "name": "calendar-publishing-app",
+  "version": "1.0.0",
+  "description": "Calendar-based content publishing automation system",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:push": "node lib/db/init.js"
+  },
+  "dependencies": {
+    "next": "^14.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "next-auth": "^4.24.5",
+    "bcryptjs": "^2.4.3",
+    "@vercel/postgres": "^0.5.1",
+    "axios": "^1.6.5",
+    "date-fns": "^3.3.1",
+    "react-beautiful-dnd": "^13.1.1",
+    "lucide-react": "^0.315.0",
+    "react-hot-toast": "^2.4.1",
+    "zod": "^3.22.4",
+    "sharp": "^0.33.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "@types/node": "^20.11.5",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "@types/bcryptjs": "^2.4.6",
+    "tailwindcss": "^3.4.1",
+    "postcss": "^8.4.33",
+    "autoprefixer": "^10.4.17",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^14.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
