@@ -12,16 +12,37 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    // Проверка секретного ключа для безопасности
     const secret = request.nextUrl.searchParams.get('secret');
-    if (secret !== process.env.MIGRATION_SECRET && secret !== process.env.CALENDAR_API_KEY) {
+    const createAdmin = request.nextUrl.searchParams.get('create_admin');
+    
+    // Для создания админа разрешаем без секрета, если админа ещё нет
+    let requiresAuth = true;
+    
+    if (createAdmin === 'true') {
+      // Проверяем, есть ли уже админ
+      try {
+        const existingAdmin = await sql`
+          SELECT id FROM users WHERE email = 'admin@calendar.app'
+        `;
+        
+        if (existingAdmin.rows.length === 0) {
+          // Админа нет - разрешаем создание без секрета
+          requiresAuth = false;
+        }
+      } catch (e) {
+        // Если таблица users не существует - разрешаем
+        requiresAuth = false;
+      }
+    }
+    
+    // Проверка секретного ключа для безопасности (кроме первого создания админа)
+    if (requiresAuth && secret !== process.env.MIGRATION_SECRET && secret !== process.env.CALENDAR_API_KEY) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const createAdmin = request.nextUrl.searchParams.get('create_admin');
     const changes: string[] = [];
 
     console.log('🔄 Running database migration...');
