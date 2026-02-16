@@ -30,7 +30,7 @@ export default function ProjectSelector({ selectedProjectId, onSelectProject }: 
     try {
       setLoading(true);
       console.log('🔍 ProjectSelector: Fetching projects...');
-      const response = await fetch('/api/projects');
+      const response = await fetch('/api/projects-v2');
       console.log('📡 ProjectSelector: Response status:', response.status);
       const data = await response.json();
       console.log('📦 ProjectSelector: Received data:', data);
