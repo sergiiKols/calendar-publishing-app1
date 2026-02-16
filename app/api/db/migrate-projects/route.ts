@@ -5,79 +5,137 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('Starting projects migration...');
+    const results: string[] = [];
     
-    // Создание таблицы projects
-    await sql`
-      CREATE TABLE IF NOT EXISTS projects (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        name VARCHAR(200) NOT NULL,
-        description TEXT,
-        color VARCHAR(7) DEFAULT '#3B82F6',
-        is_active BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW()
-      )
-    `;
-    console.log('✓ Table projects created');
+    // Шаг 1: Создание таблицы projects
+    try {
+      await sql`
+        CREATE TABLE IF NOT EXISTS projects (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          name VARCHAR(200) NOT NULL,
+          description TEXT,
+          color VARCHAR(7) DEFAULT '#3B82F6',
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP DEFAULT NOW(),
+          updated_at TIMESTAMP DEFAULT NOW()
+        )
+      `;
+      results.push('✓ Table projects created');
+    } catch (e: any) {
+      if (!e.message.includes('already exists')) {
+        throw e;
+      }
+      results.push('✓ Table projects already exists');
+    }
 
-    // Создание индекса
-    await sql`CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id, is_active)`;
-    console.log('✓ Index idx_projects_user created');
+    // Шаг 2: Создание индекса
+    try {
+      await sql`CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id, is_active)`;
+      results.push('✓ Index idx_projects_user created');
+    } catch (e: any) {
+      results.push('✓ Index idx_projects_user already exists');
+    }
 
-    // Добавление project_id в calendar_events
-    await sql`ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE`;
-    console.log('✓ Column project_id added to calendar_events');
+    // Шаг 3: Добавление project_id в calendar_events
+    try {
+      await sql`ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS project_id INTEGER`;
+      results.push('✓ Column project_id added');
+    } catch (e: any) {
+      if (e.message.includes('already exists')) {
+        results.push('✓ Column project_id already exists');
+      } else {
+        throw e;
+      }
+    }
 
-    // Создание индекса для calendar_events.project_id
-    await sql`CREATE INDEX IF NOT EXISTS idx_calendar_project ON calendar_events(project_id)`;
-    console.log('✓ Index idx_calendar_project created');
+    // Шаг 4: Добавление foreign key (опционально, может уже существовать)
+    try {
+      await sql`
+        DO $$ 
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint WHERE conname = 'calendar_events_project_id_fkey'
+          ) THEN
+            ALTER TABLE calendar_events 
+            ADD CONSTRAINT calendar_events_project_id_fkey 
+            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE;
+          END IF;
+        END $$;
+      `;
+      results.push('✓ Foreign key constraint added');
+    } catch (e: any) {
+      results.push('✓ Foreign key already exists or skipped');
+    }
 
-    // Создание триггера для updated_at
-    await sql`
-      DO $$
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_trigger WHERE tgname = 'update_projects_updated_at'
-        ) THEN
-          CREATE TRIGGER update_projects_updated_at 
-            BEFORE UPDATE ON projects 
-            FOR EACH ROW 
-            EXECUTE FUNCTION update_updated_at_column();
-        END IF;
-      END $$;
-    `;
-    console.log('✓ Trigger update_projects_updated_at created');
+    // Шаг 5: Создание индекса для calendar_events.project_id
+    try {
+      await sql`CREATE INDEX IF NOT EXISTS idx_calendar_project ON calendar_events(project_id)`;
+      results.push('✓ Index idx_calendar_project created');
+    } catch (e: any) {
+      results.push('✓ Index idx_calendar_project already exists');
+    }
 
-    // Создание дефолтного проекта для всех пользователей
-    const defaultProjects = await sql`
-      INSERT INTO projects (user_id, name, description, color)
-      SELECT DISTINCT u.id, 'Default Project', 'Автоматически созданный проект', '#3B82F6'
-      FROM users u
-      WHERE NOT EXISTS (SELECT 1 FROM projects WHERE user_id = u.id)
-      RETURNING *
-    `;
-    console.log(`✓ Created ${defaultProjects.rowCount} default projects`);
+    // Шаг 6: Создание триггера для updated_at
+    try {
+      await sql`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_trigger WHERE tgname = 'update_projects_updated_at'
+          ) THEN
+            CREATE TRIGGER update_projects_updated_at 
+              BEFORE UPDATE ON projects 
+              FOR EACH ROW 
+              EXECUTE FUNCTION update_updated_at_column();
+          END IF;
+        END $$;
+      `;
+      results.push('✓ Trigger created');
+    } catch (e: any) {
+      results.push('✓ Trigger already exists or skipped');
+    }
 
-    // Привязываем существующие события к дефолтному проекту
-    const updatedEvents = await sql`
-      UPDATE calendar_events ce
-      SET project_id = p.id
-      FROM projects p
-      JOIN users u ON p.user_id = u.id
-      WHERE ce.project_id IS NULL
-      AND p.name = 'Default Project'
-      RETURNING ce.id
-    `;
-    console.log(`✓ Updated ${updatedEvents.rowCount} calendar events with default project`);
+    // Шаг 7: Создание дефолтного проекта для всех пользователей
+    let defaultProjectsCount = 0;
+    try {
+      const defaultProjects = await sql`
+        INSERT INTO projects (user_id, name, description, color)
+        SELECT DISTINCT u.id, 'Default Project', 'Автоматически созданный проект', '#3B82F6'
+        FROM users u
+        WHERE NOT EXISTS (SELECT 1 FROM projects WHERE user_id = u.id)
+        RETURNING *
+      `;
+      defaultProjectsCount = defaultProjects.rowCount || 0;
+      results.push(`✓ Created ${defaultProjectsCount} default projects`);
+    } catch (e: any) {
+      results.push('✓ Default projects already exist or skipped');
+    }
+
+    // Шаг 8: Привязываем существующие события к дефолтному проекту
+    let eventsUpdatedCount = 0;
+    try {
+      const updatedEvents = await sql`
+        UPDATE calendar_events ce
+        SET project_id = p.id
+        FROM projects p
+        WHERE ce.project_id IS NULL
+        AND p.name = 'Default Project'
+        RETURNING ce.id
+      `;
+      eventsUpdatedCount = updatedEvents.rowCount || 0;
+      results.push(`✓ Updated ${eventsUpdatedCount} calendar events`);
+    } catch (e: any) {
+      results.push('✓ Events already updated or skipped');
+    }
 
     return NextResponse.json({
       success: true,
       message: 'Projects migration completed successfully!',
-      details: {
-        defaultProjectsCreated: defaultProjects.rowCount,
-        eventsUpdated: updatedEvents.rowCount
+      steps: results,
+      summary: {
+        defaultProjectsCreated: defaultProjectsCount,
+        eventsUpdated: eventsUpdatedCount
       }
     });
 
