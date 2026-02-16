@@ -49,25 +49,7 @@ export default function ProjectSelector({ selectedProjectId, onSelectProject }: 
     }
   };
 
-  const handleCreateProject = async (projectData: { name: string; description: string; color: string }) => {
-    try {
-      const response = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(projectData),
-      });
-
-      const data = await response.json();
-      
-      if (data.project) {
-        await fetchProjects();
-        onSelectProject(data.project.id);
-      }
-    } catch (error) {
-      console.error('Error creating project:', error);
-      alert('Ошибка при создании проекта');
-    }
-  };
+  // Функция создания проекта убрана - проекты создаются только из SMI
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
@@ -137,17 +119,10 @@ export default function ProjectSelector({ selectedProjectId, onSelectProject }: 
             )}
           </div>
 
-          {/* Кнопка создания проекта */}
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
-            title="Создать новый проект"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            <span>Новый проект</span>
-          </button>
+          {/* Информация о синхронизации */}
+          <div className="text-xs text-gray-500 px-2">
+            Проекты синхронизируются из SMI
+          </div>
         </div>
       </div>
 

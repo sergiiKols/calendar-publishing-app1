@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createInboxArticle } from '@/lib/db/client';
+import { createInboxArticle, getOrCreateProjectFromSMI } from '@/lib/db/client';
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,10 +44,12 @@ export async function POST(request: NextRequest) {
       hasContent: !!body.content,
       hasImages: !!body.images,
       imagesCount: body.images?.length || 0,
-      hasArrivalToken: !!body.arrival_token
+      hasArrivalToken: !!body.arrival_token,
+      hasProjectId: !!body.project_id,
+      hasProjectName: !!body.project_name
     });
 
-    const { title, content, images, source_project, arrival_token } = body;
+    const { title, content, images, source_project, arrival_token, project_id, project_name } = body;
 
     // Валидация
     if (!title || !content) {
@@ -58,13 +60,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Синхронизируем проект из SMI (если передан)
+    let projectInfo = null;
+    if (project_id && project_name) {
+      console.log(`🔄 Syncing project from SMI: ID=${project_id}, Name=${project_name}`);
+      try {
+        projectInfo = await getOrCreateProjectFromSMI({
+          external_project_id: project_id,
+          name: project_name,
+          user_id: 1 // TODO: получать из сессии
+        });
+        console.log(`✅ Project synced: ${projectInfo.name} (Calendar ID: ${projectInfo.id})`);
+      } catch (error: any) {
+        console.error('⚠️  Project sync failed:', error.message);
+        // Продолжаем без проекта
+      }
+    }
+
     // Создаём статью в inbox
     console.log('💾 Creating article in database...');
     const article = await createInboxArticle({
       title,
       content,
       images: images || [],
-      source_project: source_project || 'smi_unknown',
+      source_project: project_name || source_project || 'smi_unknown',
       arrival_token: arrival_token || null
     });
 
@@ -79,7 +98,12 @@ export async function POST(request: NextRequest) {
         status: article.status,
         created_at: article.created_at,
         arrival_token: article.arrival_token
-      }
+      },
+      project: projectInfo ? {
+        id: projectInfo.id,
+        external_id: projectInfo.external_project_id,
+        name: projectInfo.name
+      } : null
     }, { status: 201 });
 
   } catch (error: any) {

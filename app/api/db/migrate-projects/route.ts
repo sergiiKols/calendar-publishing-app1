@@ -13,10 +13,12 @@ export async function GET(request: NextRequest) {
         CREATE TABLE IF NOT EXISTS projects (
           id SERIAL PRIMARY KEY,
           user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          external_project_id INTEGER,
           name VARCHAR(200) NOT NULL,
           description TEXT,
           color VARCHAR(7) DEFAULT '#3B82F6',
           is_active BOOLEAN DEFAULT true,
+          synced_at TIMESTAMP,
           created_at TIMESTAMP DEFAULT NOW(),
           updated_at TIMESTAMP DEFAULT NOW()
         )
@@ -27,6 +29,21 @@ export async function GET(request: NextRequest) {
         throw e;
       }
       results.push('✓ Table projects already exists');
+    }
+
+    // Шаг 1.5: Добавление новых колонок в существующую таблицу
+    try {
+      await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS external_project_id INTEGER`;
+      results.push('✓ Column external_project_id added');
+    } catch (e: any) {
+      results.push('✓ Column external_project_id already exists');
+    }
+
+    try {
+      await sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS synced_at TIMESTAMP`;
+      results.push('✓ Column synced_at added');
+    } catch (e: any) {
+      results.push('✓ Column synced_at already exists');
     }
 
     // Шаг 2: Создание индекса

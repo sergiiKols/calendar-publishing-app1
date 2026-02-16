@@ -155,6 +155,48 @@ export async function createProject(data: {
   return result.rows[0];
 }
 
+export async function getOrCreateProjectFromSMI(data: {
+  external_project_id: number;
+  name: string;
+  user_id: number;
+  description?: string;
+  color?: string;
+}) {
+  // Сначала проверяем, есть ли уже такой проект
+  const existing = await sql`
+    SELECT * FROM projects 
+    WHERE external_project_id = ${data.external_project_id}
+  `;
+  
+  if (existing.rows.length > 0) {
+    // Обновляем название и время синхронизации
+    const updated = await sql`
+      UPDATE projects 
+      SET name = ${data.name},
+          description = ${data.description || ''},
+          synced_at = NOW()
+      WHERE external_project_id = ${data.external_project_id}
+      RETURNING *
+    `;
+    return updated.rows[0];
+  }
+  
+  // Создаём новый проект
+  const result = await sql`
+    INSERT INTO projects (user_id, external_project_id, name, description, color, synced_at)
+    VALUES (
+      ${data.user_id},
+      ${data.external_project_id},
+      ${data.name},
+      ${data.description || ''},
+      ${data.color || '#3B82F6'},
+      NOW()
+    )
+    RETURNING *
+  `;
+  return result.rows[0];
+}
+
 export async function getProjects(userId: number) {
   const result = await sql`
     SELECT * FROM projects 

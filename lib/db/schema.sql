@@ -27,20 +27,24 @@ CREATE TABLE IF NOT EXISTS inbox_articles (
 -- Индекс для быстрого поиска по статусу
 CREATE INDEX IF NOT EXISTS idx_inbox_status ON inbox_articles(status);
 
--- Таблица 3: Проекты (каждый календарь привязан к проекту)
+-- Таблица 3: Проекты (синхронизируются из SMI проекта)
 CREATE TABLE IF NOT EXISTS projects (
   id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  external_project_id INTEGER, -- ID проекта в SMI системе
   name VARCHAR(200) NOT NULL,
   description TEXT,
   color VARCHAR(7) DEFAULT '#3B82F6', -- hex color для UI
   is_active BOOLEAN DEFAULT true,
+  synced_at TIMESTAMP, -- последняя синхронизация
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(external_project_id) -- проект SMI может быть только один раз
 );
 
--- Индекс для быстрого поиска проектов пользователя
+-- Индексы для проектов
 CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_projects_external ON projects(external_project_id);
 
 -- Таблица 4: События в календаре (запланированные публикации)
 CREATE TABLE IF NOT EXISTS calendar_events (
