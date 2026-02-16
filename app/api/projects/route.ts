@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
     const userIdRaw = (session.user as any).id;
     console.log('🆔 Raw User ID from session:', userIdRaw, 'type:', typeof userIdRaw);
     console.log('📋 Full session.user:', JSON.stringify(session.user, null, 2));
+    console.log('📋 Full session:', JSON.stringify(session, null, 2));
     
     if (!userIdRaw) {
       console.error('❌ UPDATED CODE: Invalid user ID:', userIdRaw);
