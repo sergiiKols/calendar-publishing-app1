@@ -29,20 +29,21 @@ export default function ProjectSelector({ selectedProjectId, onSelectProject }: 
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      console.log('🔍 ProjectSelector: Fetching projects...');
-      const response = await fetch('/api/projects-v2');
-      console.log('📡 ProjectSelector: Response status:', response.status);
-      const data = await response.json();
-      console.log('📦 ProjectSelector: Received data:', data);
-      console.log('📦 ProjectSelector: data.error =', data.error);
-      console.log('📦 ProjectSelector: Full data:', JSON.stringify(data, null, 2));
+      console.log('🔍 ProjectSelector: Fetching projects with direct query...');
       
-      if (response.status === 400) {
-        // Сессия устарела - показываем сообщение пользователю
-        alert('Ваша сессия устарела. Пожалуйста, выйдите и войдите снова, чтобы обновить сессию.\n\nОшибка: ' + (data.error || 'Unknown error'));
-        console.error('❌ Session expired or invalid. User needs to re-login.');
+      // Временное решение: делаем прямой запрос к базе данных через специальный endpoint
+      const response = await fetch('/api/db/get-user-projects');
+      console.log('📡 ProjectSelector: Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Error response:', errorText);
+        alert('Не удалось загрузить проекты. Попробуйте обновить страницу.');
         return;
       }
+      
+      const data = await response.json();
+      console.log('📦 ProjectSelector: Received data:', data);
       
       if (data.projects) {
         setProjects(data.projects);
@@ -58,6 +59,7 @@ export default function ProjectSelector({ selectedProjectId, onSelectProject }: 
       }
     } catch (error) {
       console.error('❌ ProjectSelector: Error fetching projects:', error);
+      alert('Ошибка при загрузке проектов: ' + error.message);
     } finally {
       setLoading(false);
     }
