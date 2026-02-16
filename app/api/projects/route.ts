@@ -25,9 +25,10 @@ export async function GET(request: NextRequest) {
     console.log('📋 Full session.user:', JSON.stringify(session.user, null, 2));
     
     if (!userIdRaw) {
-      console.error('❌ Invalid user ID:', userIdRaw);
+      console.error('❌ UPDATED CODE: Invalid user ID:', userIdRaw);
+      console.error('📋 Full session.user:', JSON.stringify(session.user, null, 2));
       return NextResponse.json(
-        { error: 'Invalid user ID: undefined', message: 'Your session is missing user information. Please log out and log back in to refresh your session.' },
+        { error: 'UPDATED: Invalid user ID is undefined', message: 'Your session is missing user information. Please log out and log back in to refresh your session.' },
         { status: 400 }
       );
     }
