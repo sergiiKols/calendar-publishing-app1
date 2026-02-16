@@ -133,19 +133,108 @@ export async function deleteArticle(articleId: number) {
 }
 
 // ================================
+// PROJECTS
+// ================================
+
+export async function createProject(data: {
+  user_id: number;
+  name: string;
+  description?: string;
+  color?: string;
+}) {
+  const result = await sql`
+    INSERT INTO projects (user_id, name, description, color)
+    VALUES (
+      ${data.user_id},
+      ${data.name},
+      ${data.description || ''},
+      ${data.color || '#3B82F6'}
+    )
+    RETURNING *
+  `;
+  return result.rows[0];
+}
+
+export async function getProjects(userId: number) {
+  const result = await sql`
+    SELECT * FROM projects 
+    WHERE user_id = ${userId} AND is_active = true
+    ORDER BY created_at DESC
+  `;
+  return result.rows;
+}
+
+export async function getProjectById(projectId: number) {
+  const result = await sql`
+    SELECT * FROM projects WHERE id = ${projectId}
+  `;
+  return result.rows[0];
+}
+
+export async function updateProject(projectId: number, data: {
+  name?: string;
+  description?: string;
+  color?: string;
+  is_active?: boolean;
+}) {
+  const updates: string[] = [];
+  const values: any[] = [];
+  let paramIndex = 1;
+
+  if (data.name !== undefined) {
+    updates.push(`name = $${paramIndex++}`);
+    values.push(data.name);
+  }
+  if (data.description !== undefined) {
+    updates.push(`description = $${paramIndex++}`);
+    values.push(data.description);
+  }
+  if (data.color !== undefined) {
+    updates.push(`color = $${paramIndex++}`);
+    values.push(data.color);
+  }
+  if (data.is_active !== undefined) {
+    updates.push(`is_active = $${paramIndex++}`);
+    values.push(data.is_active);
+  }
+
+  if (updates.length === 0) {
+    return await getProjectById(projectId);
+  }
+
+  values.push(projectId);
+
+  const result = await sql.query(
+    `UPDATE projects SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${paramIndex} RETURNING *`,
+    values
+  );
+  return result.rows[0];
+}
+
+export async function deleteProject(projectId: number) {
+  const result = await sql`
+    DELETE FROM projects WHERE id = ${projectId}
+    RETURNING *
+  `;
+  return result.rows[0];
+}
+
+// ================================
 // CALENDAR EVENTS
 // ================================
 
 export async function createCalendarEvent(data: {
   article_id: number;
+  project_id: number;
   publish_date: string;
   publish_time: string;
   platforms: string[];
 }) {
   const result = await sql`
-    INSERT INTO calendar_events (article_id, publish_date, publish_time, platforms)
+    INSERT INTO calendar_events (article_id, project_id, publish_date, publish_time, platforms)
     VALUES (
       ${data.article_id},
+      ${data.project_id},
       ${data.publish_date},
       ${data.publish_time},
       ${JSON.stringify(data.platforms)}
@@ -165,12 +254,29 @@ export async function createCalendarEvent(data: {
   };
 }
 
-export async function getCalendarEvents(month?: number, year?: number) {
-  if (month && year) {
+export async function getCalendarEvents(month?: number, year?: number, projectId?: number) {
+  if (month && year && projectId) {
     const result = await sql`
-      SELECT ce.*, ia.title, ia.content, ia.images, ia.source_project, ia.created_at as article_created_at
+      SELECT ce.*, ia.title, ia.content, ia.images, ia.source_project, ia.created_at as article_created_at,
+             p.name as project_name, p.color as project_color
       FROM calendar_events ce
       JOIN inbox_articles ia ON ce.article_id = ia.id
+      LEFT JOIN projects p ON ce.project_id = p.id
+      WHERE EXTRACT(MONTH FROM publish_date) = ${month}
+        AND EXTRACT(YEAR FROM publish_date) = ${year}
+        AND ce.project_id = ${projectId}
+      ORDER BY publish_date, publish_time
+    `;
+    return result.rows;
+  }
+  
+  if (month && year) {
+    const result = await sql`
+      SELECT ce.*, ia.title, ia.content, ia.images, ia.source_project, ia.created_at as article_created_at,
+             p.name as project_name, p.color as project_color
+      FROM calendar_events ce
+      JOIN inbox_articles ia ON ce.article_id = ia.id
+      LEFT JOIN projects p ON ce.project_id = p.id
       WHERE EXTRACT(MONTH FROM publish_date) = ${month}
         AND EXTRACT(YEAR FROM publish_date) = ${year}
       ORDER BY publish_date, publish_time
@@ -178,10 +284,25 @@ export async function getCalendarEvents(month?: number, year?: number) {
     return result.rows;
   }
   
+  if (projectId) {
+    const result = await sql`
+      SELECT ce.*, ia.title, ia.content, ia.images, ia.source_project, ia.created_at as article_created_at,
+             p.name as project_name, p.color as project_color
+      FROM calendar_events ce
+      JOIN inbox_articles ia ON ce.article_id = ia.id
+      LEFT JOIN projects p ON ce.project_id = p.id
+      WHERE ce.project_id = ${projectId}
+      ORDER BY publish_date, publish_time
+    `;
+    return result.rows;
+  }
+  
   const result = await sql`
-    SELECT ce.*, ia.title, ia.content, ia.images, ia.source_project, ia.created_at as article_created_at
+    SELECT ce.*, ia.title, ia.content, ia.images, ia.source_project, ia.created_at as article_created_at,
+           p.name as project_name, p.color as project_color
     FROM calendar_events ce
     JOIN inbox_articles ia ON ce.article_id = ia.id
+    LEFT JOIN projects p ON ce.project_id = p.id
     ORDER BY publish_date, publish_time
   `;
   return result.rows;

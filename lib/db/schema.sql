@@ -27,10 +27,26 @@ CREATE TABLE IF NOT EXISTS inbox_articles (
 -- Индекс для быстрого поиска по статусу
 CREATE INDEX IF NOT EXISTS idx_inbox_status ON inbox_articles(status);
 
--- Таблица 3: События в календаре (запланированные публикации)
+-- Таблица 3: Проекты (каждый календарь привязан к проекту)
+CREATE TABLE IF NOT EXISTS projects (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  name VARCHAR(200) NOT NULL,
+  description TEXT,
+  color VARCHAR(7) DEFAULT '#3B82F6', -- hex color для UI
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Индекс для быстрого поиска проектов пользователя
+CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id, is_active);
+
+-- Таблица 4: События в календаре (запланированные публикации)
 CREATE TABLE IF NOT EXISTS calendar_events (
   id SERIAL PRIMARY KEY,
   article_id INTEGER REFERENCES inbox_articles(id) ON DELETE CASCADE,
+  project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
   publish_date DATE NOT NULL,
   publish_time TIME NOT NULL,
   platforms JSONB DEFAULT '[]', -- ["wordpress", "telegram", "facebook"]
@@ -42,8 +58,9 @@ CREATE TABLE IF NOT EXISTS calendar_events (
 -- Индекс для быстрого поиска предстоящих публикаций
 CREATE INDEX IF NOT EXISTS idx_calendar_datetime ON calendar_events(publish_date, publish_time);
 CREATE INDEX IF NOT EXISTS idx_calendar_status ON calendar_events(status);
+CREATE INDEX IF NOT EXISTS idx_calendar_project ON calendar_events(project_id);
 
--- Таблица 4: Платформы для публикации (аккаунты)
+-- Таблица 5: Платформы для публикации (аккаунты)
 CREATE TABLE IF NOT EXISTS publishing_platforms (
   id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -58,7 +75,7 @@ CREATE TABLE IF NOT EXISTS publishing_platforms (
 -- Индекс для быстрого поиска активных платформ
 CREATE INDEX IF NOT EXISTS idx_platforms_active ON publishing_platforms(is_active, platform_type);
 
--- Таблица 5: Логи публикаций
+-- Таблица 6: Логи публикаций
 CREATE TABLE IF NOT EXISTS publish_logs (
   id SERIAL PRIMARY KEY,
   calendar_event_id INTEGER REFERENCES calendar_events(id) ON DELETE CASCADE,
@@ -90,5 +107,10 @@ CREATE TRIGGER update_inbox_articles_updated_at
 
 CREATE TRIGGER update_publishing_platforms_updated_at 
   BEFORE UPDATE ON publishing_platforms 
+  FOR EACH ROW 
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_projects_updated_at 
+  BEFORE UPDATE ON projects 
   FOR EACH ROW 
   EXECUTE FUNCTION update_updated_at_column();

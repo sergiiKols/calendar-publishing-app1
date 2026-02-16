@@ -15,6 +15,8 @@ interface CalendarEvent {
   status: string;
   created_at: string;
   source_project?: string;
+  project_name?: string;
+  project_color?: string;
 }
 
 interface CalendarGridProps {
@@ -99,27 +101,37 @@ export default function CalendarGrid({ events, month, year }: CalendarGridProps)
               
               {/* Event indicators */}
               <div className="space-y-1">
-                {dayEvents.slice(0, 3).map((event) => (
-                  <button
-                    key={event.id}
-                    onClick={() => setSelectedEvent(event)}
-                    className="w-full text-left px-1 py-0.5 bg-blue-100 hover:bg-blue-200 rounded text-xs truncate transition"
-                    title={event.title}
-                  >
-                    <div className="flex items-center gap-1">
-                      <span className="font-medium">{event.publish_time.slice(0, 5)}</span>
-                      <div className="flex gap-0.5">
-                        {event.platforms.slice(0, 2).map((platform, idx) => (
-                          <div
-                            key={idx}
-                            className={`w-2 h-2 rounded-full ${getPlatformColor(platform)}`}
-                            title={platform}
-                          />
-                        ))}
+                {dayEvents.slice(0, 3).map((event) => {
+                  const projectColor = event.project_color || '#3B82F6';
+                  const bgColor = `${projectColor}20`; // Adding transparency
+                  const hoverColor = `${projectColor}30`;
+                  
+                  return (
+                    <button
+                      key={event.id}
+                      onClick={() => setSelectedEvent(event)}
+                      className="w-full text-left px-1 py-0.5 rounded text-xs truncate transition hover:opacity-80"
+                      style={{ 
+                        backgroundColor: bgColor,
+                        borderLeft: `3px solid ${projectColor}`
+                      }}
+                      title={`${event.title} (${event.project_name || 'No project'})`}
+                    >
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium">{event.publish_time.slice(0, 5)}</span>
+                        <div className="flex gap-0.5">
+                          {event.platforms.slice(0, 2).map((platform, idx) => (
+                            <div
+                              key={idx}
+                              className={`w-2 h-2 rounded-full ${getPlatformColor(platform)}`}
+                              title={platform}
+                            />
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
                 {dayEvents.length > 3 && (
                   <div className="text-xs text-gray-500 text-center">
                     +{dayEvents.length - 3} more
@@ -139,6 +151,16 @@ export default function CalendarGrid({ events, month, year }: CalendarGridProps)
               <h3 className="text-lg font-semibold text-gray-900">Event Details</h3>
             </div>
             <div className="p-4 space-y-3">
+              <div>
+                <label className="text-sm font-medium text-gray-600">Project</label>
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-4 h-4 rounded"
+                    style={{ backgroundColor: selectedEvent.project_color || '#3B82F6' }}
+                  />
+                  <p className="text-gray-900">{selectedEvent.project_name || 'No project'}</p>
+                </div>
+              </div>
               <div>
                 <label className="text-sm font-medium text-gray-600">Title</label>
                 <p className="text-gray-900">{selectedEvent.title}</p>

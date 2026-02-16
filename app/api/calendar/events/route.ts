@@ -14,8 +14,9 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const month = searchParams.get('month') ? parseInt(searchParams.get('month')!) : undefined;
     const year = searchParams.get('year') ? parseInt(searchParams.get('year')!) : undefined;
+    const projectId = searchParams.get('project_id') ? parseInt(searchParams.get('project_id')!) : undefined;
 
-    const events = await getCalendarEvents(month, year);
+    const events = await getCalendarEvents(month, year, projectId);
 
     return NextResponse.json({
       success: true,
@@ -35,12 +36,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { article_id, publish_date, publish_time, platforms } = body;
+    const { article_id, project_id, publish_date, publish_time, platforms } = body;
 
     // Валидация
-    if (!article_id || !publish_date || !publish_time || !platforms) {
+    if (!article_id || !project_id || !publish_date || !publish_time || !platforms) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields: article_id, project_id, publish_date, publish_time, platforms' },
         { status: 400 }
       );
     }
@@ -48,6 +49,7 @@ export async function POST(request: NextRequest) {
     // Создаём событие
     const result = await createCalendarEvent({
       article_id,
+      project_id,
       publish_date,
       publish_time,
       platforms

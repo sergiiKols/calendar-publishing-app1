@@ -6,6 +6,7 @@ import InboxTable from '@/components/InboxTable';
 import CalendarGrid from '@/components/CalendarGrid';
 import ScheduleModal from '@/components/ScheduleModal';
 import ArticleViewModal from '@/components/ArticleViewModal';
+import ProjectSelector from '@/components/ProjectSelector';
 
 export default function CalendarPage() {
   const [inboxArticles, setInboxArticles] = useState([]);
@@ -16,11 +17,12 @@ export default function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
 
   useEffect(() => {
     loadInboxArticles();
     loadCalendarEvents();
-  }, [statusFilter, currentMonth, currentYear]);
+  }, [statusFilter, currentMonth, currentYear, selectedProjectId]);
 
   const loadInboxArticles = async () => {
     try {
@@ -38,8 +40,13 @@ export default function CalendarPage() {
 
   const loadCalendarEvents = async () => {
     try {
+      if (!selectedProjectId) {
+        setCalendarEvents([]);
+        return;
+      }
+      
       const response = await fetch(
-        `/api/calendar/events?month=${currentMonth}&year=${currentYear}`
+        `/api/calendar/events?month=${currentMonth}&year=${currentYear}&project_id=${selectedProjectId}`
       );
       const data = await response.json();
       setCalendarEvents(data.events || []);
@@ -85,6 +92,11 @@ export default function CalendarPage() {
         return;
       }
 
+      if (!selectedProjectId) {
+        alert('Ошибка: проект не выбран');
+        return;
+      }
+
       if (!scheduleData.date || !scheduleData.time || !scheduleData.platforms || scheduleData.platforms.length === 0) {
         alert('Пожалуйста, заполните все поля');
         return;
@@ -95,6 +107,7 @@ export default function CalendarPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           article_id: selectedArticle.id,
+          project_id: selectedProjectId,
           publish_date: scheduleData.date,
           publish_time: scheduleData.time,
           platforms: scheduleData.platforms
@@ -123,19 +136,30 @@ export default function CalendarPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Calendar className="text-blue-600" size={32} />
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Calendar Publishing</h1>
-              <p className="text-sm text-gray-600">Plan and automate your content</p>
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <Calendar className="text-blue-600" size={32} />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Calendar Publishing</h1>
+                <p className="text-sm text-gray-600">Plan and automate your content</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <button className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
+                <Settings size={20} />
+                Settings
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <button className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
-              <Settings size={20} />
-              Settings
-            </button>
+          
+          {/* Project Selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Проект:</span>
+            <ProjectSelector
+              selectedProjectId={selectedProjectId}
+              onSelectProject={setSelectedProjectId}
+            />
           </div>
         </div>
       </header>
