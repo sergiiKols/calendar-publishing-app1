@@ -34,10 +34,12 @@ export default function ProjectSelector({ selectedProjectId, onSelectProject }: 
       console.log('📡 ProjectSelector: Response status:', response.status);
       const data = await response.json();
       console.log('📦 ProjectSelector: Received data:', data);
+      console.log('📦 ProjectSelector: data.error =', data.error);
+      console.log('📦 ProjectSelector: Full data:', JSON.stringify(data, null, 2));
       
-      if (response.status === 400 && data.error?.includes('Invalid user ID')) {
+      if (response.status === 400) {
         // Сессия устарела - показываем сообщение пользователю
-        alert('Ваша сессия устарела. Пожалуйста, выйдите и войдите снова, чтобы обновить сессию.');
+        alert('Ваша сессия устарела. Пожалуйста, выйдите и войдите снова, чтобы обновить сессию.\n\nОшибка: ' + (data.error || 'Unknown error'));
         console.error('❌ Session expired or invalid. User needs to re-login.');
         return;
       }
