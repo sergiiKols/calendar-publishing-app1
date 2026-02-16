@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import ProjectModal from './ProjectModal';
 
 interface Project {
   id: number;
@@ -19,7 +18,6 @@ interface ProjectSelectorProps {
 
 export default function ProjectSelector({ selectedProjectId, onSelectProject }: ProjectSelectorProps) {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -125,13 +123,6 @@ export default function ProjectSelector({ selectedProjectId, onSelectProject }: 
           </div>
         </div>
       </div>
-
-      {/* Модальное окно создания проекта */}
-      <ProjectModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleCreateProject}
-      />
     </>
   );
 }
