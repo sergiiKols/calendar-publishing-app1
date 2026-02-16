@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Calendar, Filter, Settings } from 'lucide-react';
+import { Calendar, Filter, Settings, LogOut } from 'lucide-react';
+import { signOut } from 'next-auth/react';
 import InboxTable from '@/components/InboxTable';
 import CalendarGrid from '@/components/CalendarGrid';
 import ScheduleModal from '@/components/ScheduleModal';
@@ -160,6 +161,13 @@ export default function CalendarPage() {
               <button className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
                 <Settings size={20} />
                 Settings
+              </button>
+              <button 
+                onClick={() => signOut({ callbackUrl: '/login' })}
+                className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+              >
+                <LogOut size={20} />
+                Выйти
               </button>
             </div>
           </div>
