@@ -86,48 +86,59 @@ export default function CalendarPage() {
 
   const handleScheduleSubmit = async (scheduleData: any) => {
     try {
+      console.log('🚀 CalendarPage: handleScheduleSubmit called', { scheduleData, selectedArticle, selectedProjectId });
+      
       // Проверка данных перед отправкой
       if (!selectedArticle?.id) {
+        console.error('❌ No article selected');
         alert('Ошибка: статья не выбрана');
         return;
       }
 
       if (!selectedProjectId) {
+        console.error('❌ No project selected');
         alert('Ошибка: проект не выбран');
         return;
       }
 
       if (!scheduleData.date || !scheduleData.time || !scheduleData.platforms || scheduleData.platforms.length === 0) {
+        console.error('❌ Missing schedule data');
         alert('Пожалуйста, заполните все поля');
         return;
       }
 
+      const requestBody = {
+        article_id: selectedArticle.id,
+        project_id: selectedProjectId,
+        publish_date: scheduleData.date,
+        publish_time: scheduleData.time,
+        platforms: scheduleData.platforms
+      };
+      
+      console.log('📤 Sending request to /api/calendar/events:', requestBody);
+
       const response = await fetch('/api/calendar/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          article_id: selectedArticle.id,
-          project_id: selectedProjectId,
-          publish_date: scheduleData.date,
-          publish_time: scheduleData.time,
-          platforms: scheduleData.platforms
-        })
+        body: JSON.stringify(requestBody)
       });
 
       const data = await response.json();
+      console.log('📥 Response from server:', { status: response.status, data });
 
       if (response.ok) {
+        console.log('✅ Event created successfully');
         setShowScheduleModal(false);
         setSelectedArticle(null);
         loadInboxArticles();
         loadCalendarEvents();
         alert('Статья успешно добавлена в календарь!');
       } else {
-        console.error('Server error:', data);
+        console.error('❌ Server error:', data);
         alert(`Ошибка при планировании: ${data.error || 'Неизвестная ошибка'}\n${data.details || ''}`);
       }
     } catch (error) {
-      console.error('Error scheduling article:', error);
+      console.error('❌ Network error scheduling article:', error);
       alert('Ошибка сети при планировании статьи');
     }
   };

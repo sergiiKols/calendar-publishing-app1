@@ -32,10 +32,15 @@ export default function ScheduleModal({ article, onClose, onSubmit }: ScheduleMo
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('📝 ScheduleModal: Form submitted', { date, time, platforms });
+    
     if (!date || !time || platforms.length === 0) {
+      console.warn('⚠️ ScheduleModal: Validation failed', { date, time, platformsCount: platforms.length });
       alert('Please fill all fields');
       return;
     }
+    
+    console.log('✅ ScheduleModal: Validation passed, calling onSubmit');
     onSubmit({ date, time, platforms });
   };
 

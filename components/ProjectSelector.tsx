@@ -29,19 +29,26 @@ export default function ProjectSelector({ selectedProjectId, onSelectProject }: 
   const fetchProjects = async () => {
     try {
       setLoading(true);
+      console.log('🔍 ProjectSelector: Fetching projects...');
       const response = await fetch('/api/projects');
+      console.log('📡 ProjectSelector: Response status:', response.status);
       const data = await response.json();
+      console.log('📦 ProjectSelector: Received data:', data);
       
       if (data.projects) {
         setProjects(data.projects);
+        console.log('✅ ProjectSelector: Projects loaded:', data.projects.length);
         
         // Автоматически выбираем первый проект, если ничего не выбрано
         if (!selectedProjectId && data.projects.length > 0) {
+          console.log('🎯 ProjectSelector: Auto-selecting first project:', data.projects[0].id);
           onSelectProject(data.projects[0].id);
         }
+      } else {
+        console.warn('⚠️ ProjectSelector: No projects in response');
       }
     } catch (error) {
-      console.error('Error fetching projects:', error);
+      console.error('❌ ProjectSelector: Error fetching projects:', error);
     } finally {
       setLoading(false);
     }

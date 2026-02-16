@@ -6,9 +6,13 @@ import { createProject, getProjects } from '@/lib/db/client';
 // GET /api/projects - получить все проекты пользователя
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 GET /api/projects - Fetching projects...');
     const session = await getServerSession(authOptions);
     
+    console.log('👤 Session:', { hasSession: !!session, email: session?.user?.email });
+    
     if (!session?.user?.email) {
+      console.warn('⚠️ Unauthorized access attempt');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -17,12 +21,14 @@ export async function GET(request: NextRequest) {
 
     // Получаем user_id из сессии
     const userId = (session.user as any).id;
+    console.log('🆔 User ID:', userId);
     
     const projects = await getProjects(userId);
+    console.log('📦 Projects fetched:', { count: projects.length, projects });
     
     return NextResponse.json({ projects });
   } catch (error) {
-    console.error('Error fetching projects:', error);
+    console.error('❌ Error fetching projects:', error);
     return NextResponse.json(
       { error: 'Failed to fetch projects' },
       { status: 500 }
