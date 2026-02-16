@@ -20,13 +20,25 @@ export async function GET(request: NextRequest) {
     }
 
     // Получаем user_id из сессии
-    const userId = parseInt((session.user as any).id);
-    console.log('🆔 User ID:', userId, 'type:', typeof userId);
+    const userIdRaw = (session.user as any).id;
+    console.log('🆔 Raw User ID from session:', userIdRaw, 'type:', typeof userIdRaw);
+    console.log('📋 Full session.user:', JSON.stringify(session.user, null, 2));
+    
+    if (!userIdRaw) {
+      console.error('❌ No user ID in session. User may need to re-login.');
+      return NextResponse.json(
+        { error: 'No user ID in session. Please log out and log back in.' },
+        { status: 400 }
+      );
+    }
+    
+    const userId = parseInt(userIdRaw);
+    console.log('🆔 Parsed User ID:', userId, 'isNaN:', isNaN(userId));
     
     if (isNaN(userId)) {
-      console.error('❌ Invalid user ID:', (session.user as any).id);
+      console.error('❌ Invalid user ID format:', userIdRaw);
       return NextResponse.json(
-        { error: 'Invalid user session' },
+        { error: 'Invalid user session format' },
         { status: 400 }
       );
     }
