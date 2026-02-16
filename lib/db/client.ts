@@ -169,11 +169,12 @@ export async function getOrCreateProjectFromSMI(data: {
   `;
   
   if (existing.rows.length > 0) {
-    // Обновляем название и время синхронизации
+    // Обновляем название, описание, цвет и время синхронизации
     const updated = await sql`
       UPDATE projects 
       SET name = ${data.name},
           description = ${data.description || ''},
+          color = ${data.color || '#3B82F6'},
           synced_at = NOW()
       WHERE external_project_id = ${data.external_project_id}
       RETURNING *
