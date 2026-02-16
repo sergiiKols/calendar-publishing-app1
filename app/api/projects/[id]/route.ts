@@ -29,7 +29,7 @@ export async function GET(
     }
 
     // Проверяем, что проект принадлежит пользователю
-    const userId = (session.user as any).id;
+    const userId = parseInt((session.user as any).id);
     if (project.user_id !== userId) {
       return NextResponse.json(
         { error: 'Forbidden' },
@@ -73,7 +73,7 @@ export async function PUT(
     }
 
     // Проверяем, что проект принадлежит пользователю
-    const userId = (session.user as any).id;
+    const userId = parseInt((session.user as any).id);
     if (existingProject.user_id !== userId) {
       return NextResponse.json(
         { error: 'Forbidden' },
@@ -127,7 +127,7 @@ export async function DELETE(
     }
 
     // Проверяем, что проект принадлежит пользователю
-    const userId = (session.user as any).id;
+    const userId = parseInt((session.user as any).id);
     if (existingProject.user_id !== userId) {
       return NextResponse.json(
         { error: 'Forbidden' },

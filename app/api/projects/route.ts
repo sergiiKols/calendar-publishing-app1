@@ -20,8 +20,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Получаем user_id из сессии
-    const userId = (session.user as any).id;
-    console.log('🆔 User ID:', userId);
+    const userId = parseInt((session.user as any).id);
+    console.log('🆔 User ID:', userId, 'type:', typeof userId);
+    
+    if (isNaN(userId)) {
+      console.error('❌ Invalid user ID:', (session.user as any).id);
+      return NextResponse.json(
+        { error: 'Invalid user session' },
+        { status: 400 }
+      );
+    }
     
     const projects = await getProjects(userId);
     console.log('📦 Projects fetched:', { count: projects.length, projects });
@@ -48,7 +56,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = (session.user as any).id;
+    const userId = parseInt((session.user as any).id);
+    
+    if (isNaN(userId)) {
+      return NextResponse.json(
+        { error: 'Invalid user session' },
+        { status: 400 }
+      );
+    }
+    
     const body = await request.json();
     
     const { name, description, color } = body;
