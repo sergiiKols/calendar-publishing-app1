@@ -25,9 +25,9 @@ export async function GET(request: NextRequest) {
     console.log('📋 Full session.user:', JSON.stringify(session.user, null, 2));
     
     if (!userIdRaw) {
-      console.error('❌ No user ID in session. User may need to re-login.');
+      console.error('❌ Invalid user ID:', userIdRaw);
       return NextResponse.json(
-        { error: 'No user ID in session. Please log out and log back in.' },
+        { error: 'Invalid user ID: undefined', message: 'Your session is missing user information. Please log out and log back in to refresh your session.' },
         { status: 400 }
       );
     }
@@ -68,11 +68,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = parseInt((session.user as any).id);
+    const userIdRaw = (session.user as any).id;
+    if (!userIdRaw) {
+      return NextResponse.json(
+        { error: 'Invalid user ID: undefined', message: 'Your session is missing user information. Please log out and log back in to refresh your session.' },
+        { status: 400 }
+      );
+    }
+    const userId = parseInt(userIdRaw);
     
     if (isNaN(userId)) {
       return NextResponse.json(
-        { error: 'Invalid user session' },
+        { error: 'Invalid user session format' },
         { status: 400 }
       );
     }

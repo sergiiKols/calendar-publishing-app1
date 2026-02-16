@@ -35,6 +35,13 @@ export default function ProjectSelector({ selectedProjectId, onSelectProject }: 
       const data = await response.json();
       console.log('📦 ProjectSelector: Received data:', data);
       
+      if (response.status === 400 && data.error?.includes('Invalid user ID')) {
+        // Сессия устарела - показываем сообщение пользователю
+        alert('Ваша сессия устарела. Пожалуйста, выйдите и войдите снова, чтобы обновить сессию.');
+        console.error('❌ Session expired or invalid. User needs to re-login.');
+        return;
+      }
+      
       if (data.projects) {
         setProjects(data.projects);
         console.log('✅ ProjectSelector: Projects loaded:', data.projects.length);

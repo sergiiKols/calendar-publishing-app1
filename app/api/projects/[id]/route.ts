@@ -29,7 +29,20 @@ export async function GET(
     }
 
     // Проверяем, что проект принадлежит пользователю
-    const userId = parseInt((session.user as any).id);
+    const userIdRaw = (session.user as any).id;
+    if (!userIdRaw) {
+      return NextResponse.json(
+        { error: 'Invalid user ID: undefined', message: 'Your session is missing user information. Please log out and log back in to refresh your session.' },
+        { status: 400 }
+      );
+    }
+    const userId = parseInt(userIdRaw);
+    if (isNaN(userId)) {
+      return NextResponse.json(
+        { error: 'Invalid user session format' },
+        { status: 400 }
+      );
+    }
     if (project.user_id !== userId) {
       return NextResponse.json(
         { error: 'Forbidden' },
@@ -73,7 +86,20 @@ export async function PUT(
     }
 
     // Проверяем, что проект принадлежит пользователю
-    const userId = parseInt((session.user as any).id);
+    const userIdRaw = (session.user as any).id;
+    if (!userIdRaw) {
+      return NextResponse.json(
+        { error: 'Invalid user ID: undefined', message: 'Your session is missing user information. Please log out and log back in to refresh your session.' },
+        { status: 400 }
+      );
+    }
+    const userId = parseInt(userIdRaw);
+    if (isNaN(userId)) {
+      return NextResponse.json(
+        { error: 'Invalid user session format' },
+        { status: 400 }
+      );
+    }
     if (existingProject.user_id !== userId) {
       return NextResponse.json(
         { error: 'Forbidden' },
@@ -127,7 +153,20 @@ export async function DELETE(
     }
 
     // Проверяем, что проект принадлежит пользователю
-    const userId = parseInt((session.user as any).id);
+    const userIdRaw = (session.user as any).id;
+    if (!userIdRaw) {
+      return NextResponse.json(
+        { error: 'Invalid user ID: undefined', message: 'Your session is missing user information. Please log out and log back in to refresh your session.' },
+        { status: 400 }
+      );
+    }
+    const userId = parseInt(userIdRaw);
+    if (isNaN(userId)) {
+      return NextResponse.json(
+        { error: 'Invalid user session format' },
+        { status: 400 }
+      );
+    }
     if (existingProject.user_id !== userId) {
       return NextResponse.json(
         { error: 'Forbidden' },
