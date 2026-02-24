@@ -1,27 +1,42 @@
-import { sql } from '@vercel/postgres';
+import { Pool } from 'pg';
 
 /**
- * Database client для работы с Vercel Postgres
+ * Database client для работы с PostgreSQL
  */
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL,
+});
+
+// Helper function for queries
+async function query(text: string, params?: any[]) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(text, params);
+    return result.rows;
+  } finally {
+    client.release();
+  }
+}
 
 // ================================
 // USERS
 // ================================
 
 export async function createUser(email: string, passwordHash: string, name?: string) {
-  const result = await sql`
-    INSERT INTO users (email, password_hash, name)
-    VALUES (${email}, ${passwordHash}, ${name})
-    RETURNING id, email, name, created_at
-  `;
-  return result.rows[0];
+  const result = await query(
+    'INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id, email, name, created_at',
+    [email, passwordHash, name]
+  );
+  return result[0];
 }
 
 export async function getUserByEmail(email: string) {
-  const result = await sql`
-    SELECT * FROM users WHERE email = ${email}
-  `;
-  return result.rows[0];
+  const result = await query(
+    'SELECT * FROM users WHERE email = $1',
+    [email]
+  );
+  return result[0];
 }
 
 // ================================
