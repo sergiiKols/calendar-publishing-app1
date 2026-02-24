@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database for Calendar App
+  calendar-db:
+    image: postgres:15-alpine
+    container_name: calendar-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-calendar_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-calendar_password_change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-calendar_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - calendar-db-data:/var/lib/postgresql/data
+      # Initialize database on first run
+      - ./lib/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    ports:
+      - "5433:5432"  # External port 5433 to avoid conflicts
+    networks:
+      - calendar-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-calendar_user} -d ${POSTGRES_DB:-calendar_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Next.js Calendar Application
+  calendar-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: calendar-nextjs
+    restart: unless-stopped
+    environment:
+      # Database connection
+      POSTGRES_URL: postgresql://${POSTGRES_USER:-calendar_user}:${POSTGRES_PASSWORD:-calendar_password_change_me}@calendar-db:5432/${POSTGRES_DB:-calendar_db}
+      POSTGRES_PRISMA_URL: postgresql://${POSTGRES_USER:-calendar_user}:${POSTGRES_PASSWORD:-calendar_password_change_me}@calendar-db:5432/${POSTGRES_DB:-calendar_db}?pgbouncer=true&connect_timeout=15
+      POSTGRES_URL_NON_POOLING: postgresql://${POSTGRES_USER:-calendar_user}:${POSTGRES_PASSWORD:-calendar_password_change_me}@calendar-db:5432/${POSTGRES_DB:-calendar_db}
+      POSTGRES_USER: ${POSTGRES_USER:-calendar_user}
+      POSTGRES_HOST: calendar-db
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-calendar_password_change_me}
+      POSTGRES_DATABASE: ${POSTGRES_DB:-calendar_db}
+      
+      # NextAuth configuration
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-generate-random-secret-key-here}
+      
+      # API Keys
+      CALENDAR_API_KEY: ${CALENDAR_API_KEY:-your-api-key-here}
+      CRON_SECRET: ${CRON_SECRET:-your-cron-secret-here}
+      
+      # Node environment
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    depends_on:
+      calendar-db:
+        condition: service_healthy
+    networks:
+      - calendar-network
+    volumes:
+      # Mount db scripts for migrations
+      - ./lib/db:/app/lib/db:ro
+
+  # Cron service for auto-publishing (runs every 15 minutes)
+  calendar-cron:
+    image: alpine:latest
+    container_name: calendar-cron
+    restart: unless-stopped
+    environment:
+      CRON_SECRET: ${CRON_SECRET:-your-cron-secret-here}
+      CALENDAR_APP_URL: http://calendar-app:3000
+    networks:
+      - calendar-network
+    depends_on:
+      - calendar-app
+    command: >
+      sh -c "
+        apk add --no-cache curl &&
+        echo '*/15 * * * * curl -H \"X-Cron-Secret: $${CRON_SECRET}\" $${CALENDAR_APP_URL}/api/cron/publish' > /etc/crontabs/root &&
+        crond -f -l 2
+      "
+
+networks:
+  calendar-network:
+    driver: bridge
+
+volumes:
+  calendar-db-data:
+    driver: local

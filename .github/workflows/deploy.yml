@@ -1,0 +1,71 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Позволяет запускать вручную
+
+jobs:
+  deploy:
+    name: Deploy Calendar App
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 🔔 Начало деплоя
+        run: |
+          echo "🚀 Запуск деплоя Calendar App"
+          echo "📅 $(date)"
+          echo "👤 Triggered by: ${{ github.actor }}"
+          echo "📝 Commit: ${{ github.event.head_commit.message }}"
+      
+      - name: 📥 Checkout code
+        uses: actions/checkout@v3
+      
+      - name: 🐳 Deploy to server via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            set -e
+            
+            echo "📂 Переход в папку проекта..."
+            cd ${{ secrets.PROJECT_PATH || '/home/user/calendar-app' }}
+            
+            echo "📥 Получение изменений из Git..."
+            git pull origin main
+            
+            echo "🐳 Остановка контейнеров..."
+            docker-compose down
+            
+            echo "🔨 Пересборка образов..."
+            docker-compose build --no-cache app
+            
+            echo "🚀 Запуск контейнеров..."
+            docker-compose up -d
+            
+            echo "⏳ Ожидание запуска..."
+            sleep 5
+            
+            echo "✅ Проверка статуса..."
+            docker-compose ps
+            
+            echo "📊 Логи (последние 20 строк)..."
+            docker-compose logs --tail=20 app
+            
+            echo "🎉 Деплой завершен успешно!"
+      
+      - name: ✅ Уведомление об успехе
+        if: success()
+        run: |
+          echo "✅ Деплой успешно завершен!"
+          echo "🌐 Приложение доступно на: http://${{ secrets.SERVER_HOST }}:3000"
+      
+      - name: ❌ Уведомление об ошибке
+        if: failure()
+        run: |
+          echo "❌ Деплой завершился с ошибкой!"
+          echo "Проверьте логи GitHub Actions для деталей"

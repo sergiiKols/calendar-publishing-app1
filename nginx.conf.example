@@ -1,0 +1,93 @@
+# ========================================
+# Nginx Configuration for Calendar App
+# ========================================
+# Place this file in: /etc/nginx/sites-available/calendar
+# Then create symlink: sudo ln -s /etc/nginx/sites-available/calendar /etc/nginx/sites-enabled/
+
+server {
+    listen 80;
+    listen [::]:80;
+    
+    # Replace with your domain name
+    server_name calendar.yourdomain.com;
+    
+    # Access and error logs
+    access_log /var/log/nginx/calendar-access.log;
+    error_log /var/log/nginx/calendar-error.log;
+    
+    # Maximum upload size (for article images)
+    client_max_body_size 50M;
+    
+    # Proxy to Next.js application
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        
+        # WebSocket support
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        
+        # Headers
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+        
+        # Cache bypass
+        proxy_cache_bypass $http_upgrade;
+    }
+    
+    # Static files caching (Next.js static assets)
+    location /_next/static/ {
+        proxy_pass http://localhost:3000;
+        proxy_cache_valid 200 60m;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+    
+    # Images caching
+    location ~* \.(jpg|jpeg|png|gif|ico|svg|webp)$ {
+        proxy_pass http://localhost:3000;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000";
+    }
+    
+    # Fonts caching
+    location ~* \.(woff|woff2|ttf|eot)$ {
+        proxy_pass http://localhost:3000;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+
+# ========================================
+# HTTPS Configuration (after SSL setup)
+# ========================================
+# This section will be automatically configured by Certbot
+# Or manually add after obtaining SSL certificate
+
+# server {
+#     listen 443 ssl http2;
+#     listen [::]:443 ssl http2;
+#     
+#     server_name calendar.yourdomain.com;
+#     
+#     # SSL certificates (Let's Encrypt)
+#     ssl_certificate /etc/letsencrypt/live/calendar.yourdomain.com/fullchain.pem;
+#     ssl_certificate_key /etc/letsencrypt/live/calendar.yourdomain.com/privkey.pem;
+#     
+#     # SSL configuration
+#     ssl_protocols TLSv1.2 TLSv1.3;
+#     ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384';
+#     ssl_prefer_server_ciphers off;
+#     
+#     # HSTS
+#     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+#     
+#     # Rest of configuration same as HTTP...
+# }
