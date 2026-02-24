@@ -135,10 +135,6 @@ export default function ProjectSelector({ selectedProjectId, onSelectProject }: 
             )}
           </div>
 
-          {/* Информация о синхронизации */}
-          <div className="text-xs text-gray-500 px-2">
-            Проекты синхронизируются из SMI
-          </div>
         </div>
       </div>
     </>
