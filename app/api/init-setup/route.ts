@@ -7,7 +7,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { query } from '@/lib/db/client';
 import bcrypt from 'bcryptjs';
 
 export const dynamic = 'force-dynamic';
@@ -17,18 +17,19 @@ export async function GET() {
     console.log('🔍 Checking if admin user exists...');
 
     // Check if admin already exists
-    const existingAdmin = await sql`
-      SELECT id, email, created_at FROM users WHERE email = 'admin@calendar.app'
-    `;
+    const existingAdmin = await query(
+      'SELECT id, email, created_at FROM users WHERE email = $1',
+      ['admin@calendar.app']
+    );
 
-    if (existingAdmin.rows.length > 0) {
+    if (existingAdmin.length > 0) {
       return NextResponse.json(
         { 
           success: false,
           message: 'Admin user already exists. Setup is complete.',
           admin: {
-            email: existingAdmin.rows[0].email,
-            created_at: existingAdmin.rows[0].created_at
+            email: existingAdmin[0].email,
+            created_at: existingAdmin[0].created_at
           }
         },
         { status: 403 }
@@ -45,18 +46,17 @@ export async function GET() {
     const passwordHash = await bcrypt.hash(adminPassword, 10);
 
     // Create admin user
-    const result = await sql`
-      INSERT INTO users (email, password_hash, name)
-      VALUES (${adminEmail}, ${passwordHash}, ${adminName})
-      RETURNING id, email, name, created_at
-    `;
+    const result = await query(
+      'INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id, email, name, created_at',
+      [adminEmail, passwordHash, adminName]
+    );
 
     console.log('✅ Admin user created successfully!');
 
     return NextResponse.json({
       success: true,
       message: '🎉 Admin user created successfully!',
-      user: result.rows[0],
+      user: result[0],
       credentials: {
         email: adminEmail,
         password: adminPassword,
