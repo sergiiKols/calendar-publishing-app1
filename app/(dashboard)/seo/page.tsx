@@ -5,9 +5,6 @@
 
 'use client';
 
-//Force dynamic rendering for NextAuth
-export const dynamic = 'force-dynamic';
-
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -36,7 +33,8 @@ interface Project {
 }
 
 export default function SeoPage() {
-  const { data: session, status } = useSession();
+  const session = useSession();
+  const status = session?.status || 'loading';
   const router = useRouter();
 
   const [keywords, setKeywords] = useState<Keyword[]>([]);
