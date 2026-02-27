@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { sql } from '@vercel/postgres';
+import { sql } from '@/lib/db/sql';
 
 export async function DELETE(
   request: NextRequest,

@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { sql } from '@vercel/postgres';
+import { sql } from '@/lib/db/sql';
 import { getDataForSeoClient } from '@/lib/dataforseo/client';
 import { BATCH_CONFIG } from '@/lib/dataforseo/config';
 import type { SubmitKeywordsRequest, SubmitKeywordsResponse } from '@/lib/dataforseo/types';

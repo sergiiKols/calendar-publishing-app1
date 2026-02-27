@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { sql } from '@vercel/postgres';
+import { sql } from '@/lib/db/sql';
 import { buildSemanticCluster } from '@/lib/dataforseo/labs-client';
 import { clusterKeywordsFull, exportClustersToCSV } from '@/lib/dataforseo/clustering';
 import { SEMANTIC_CLUSTER_CONFIG } from '@/lib/dataforseo/config';
