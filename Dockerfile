@@ -15,7 +15,7 @@ FROM base AS builder
 WORKDIR /app
 
 # Cache buster - change this to force rebuild
-ARG CACHEBUST=1
+ARG CACHEBUST=2
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
