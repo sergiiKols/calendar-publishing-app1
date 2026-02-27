@@ -33,8 +33,13 @@ interface Project {
 }
 
 export default function SeoPage() {
-  const session = useSession();
-  const status = session?.status || 'loading';
+  const { data: session, status } = useSession({
+    required: true,
+    onUnauthenticated() {
+      // Redirect to login if not authenticated
+      window.location.href = '/login';
+    },
+  });
   const router = useRouter();
 
   const [keywords, setKeywords] = useState<Keyword[]>([]);

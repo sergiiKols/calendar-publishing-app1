@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { sql } from '@/lib/db/sql';
 import bcrypt from 'bcryptjs';
 
 export const dynamic = 'force-dynamic';
