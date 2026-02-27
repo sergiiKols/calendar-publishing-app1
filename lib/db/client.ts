@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import { sql } from './sql';
 
 /**
  * Database client для работы с PostgreSQL
