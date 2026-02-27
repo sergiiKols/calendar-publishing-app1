@@ -33,13 +33,7 @@ interface Project {
 }
 
 export default function SeoPage() {
-  const { data: session, status } = useSession({
-    required: true,
-    onUnauthenticated() {
-      // Redirect to login if not authenticated
-      window.location.href = '/login';
-    },
-  });
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   const [keywords, setKeywords] = useState<Keyword[]>([]);
@@ -62,10 +56,12 @@ export default function SeoPage() {
   });
 
   useEffect(() => {
-    if (status === 'authenticated') {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    } else if (status === 'authenticated') {
       fetchData();
     }
-  }, [status, filterProject, filterStatus]);
+  }, [status, router, filterProject, filterStatus]);
 
   const fetchData = async () => {
     setLoading(true);
