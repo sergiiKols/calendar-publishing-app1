@@ -5,6 +5,10 @@
 
 'use client';
 
+// Disable static generation for this page
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -62,9 +66,7 @@ export default function SeoPage() {
   });
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    } else if (status === 'authenticated') {
+    if (status === 'authenticated') {
       fetchData();
     }
   }, [status, filterProject, filterStatus]);

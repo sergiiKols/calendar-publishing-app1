@@ -30,7 +30,7 @@ export async function sql(
     }
   });
 
-  const result = await query(text, params);
+  const result = await pool.query(text, params);
   return {
     rows: result.rows,
     rowCount: result.rowCount,
@@ -41,5 +41,5 @@ export async function sql(
 
 // Добавляем метод query для совместимости
 sql.query = async (text: string, params?: any[]) => {
-  return query(text, params);
+  return pool.query(text, params);
 };
