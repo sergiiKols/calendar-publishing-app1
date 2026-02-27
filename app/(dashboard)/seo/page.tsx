@@ -62,7 +62,7 @@ export default function SeoPage() {
     } else if (status === 'authenticated') {
       fetchData();
     }
-  }, [status, router, filterProject, filterStatus]);
+  }, [status, filterProject, filterStatus]);
 
   const fetchData = async () => {
     setLoading(true);
