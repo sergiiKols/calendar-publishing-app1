@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     // Если пользователей нет - это критическая ошибка, нужно создать через /api/init-setup
     let userId = 1;
     try {
-      const { sql } = await import('@vercel/postgres');
+      const { sql } = await import('@/lib/db/sql');
       const userResult = await sql`SELECT id FROM users ORDER BY id LIMIT 1`;
       if (userResult.rows.length === 0) {
         throw new Error('No users found in database. Please create admin user first via /api/init-setup');
