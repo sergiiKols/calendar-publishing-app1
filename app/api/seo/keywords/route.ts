@@ -283,12 +283,17 @@ async function processKeywordsInBackground(
         let completedTasks = 0;
         let failedTasks = 0;
 
+        console.log(`[SEO] About to call processKeywordsData for: ${keyword}`);
+
         // 1. Keywords Data (основной метод - обязательный)
         try {
           await processKeywordsData(client, keyword, language, locationCode, keywordId);
           completedTasks++;
-        } catch (error) {
-          console.error(`[SEO] Keywords Data failed for ${keyword}:`, error);
+          console.log(`[SEO] processKeywordsData completed successfully for: ${keyword}`);
+        } catch (error: any) {
+          console.error(`[SEO] Keywords Data FAILED for ${keyword}:`, error);
+          console.error(`[SEO] Error message:`, error?.message);
+          console.error(`[SEO] Error stack:`, error?.stack);
           failedTasks++;
         }
 
