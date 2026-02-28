@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     const projects = await getProjects(userId);
     console.log('📦 Projects fetched:', { count: projects.length, projects });
     
-    return NextResponse.json({ projects });
+    return NextResponse.json({ success: true, projects });
   } catch (error) {
     console.error('❌ Error fetching projects:', error);
     return NextResponse.json(
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       color: color || '#3B82F6'
     });
     
-    return NextResponse.json({ project }, { status: 201 });
+    return NextResponse.json({ success: true, project }, { status: 201 });
   } catch (error) {
     console.error('Error creating project:', error);
     return NextResponse.json(

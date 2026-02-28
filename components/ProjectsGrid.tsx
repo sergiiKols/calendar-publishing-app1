@@ -57,7 +57,7 @@ export default function ProjectsGrid({
 
       const data = await response.json();
 
-      if (data.success) {
+      if (response.ok && data.success && data.project) {
         toast.success('Проект создан!');
         setNewProject({ name: '', description: '' });
         setShowCreateForm(false);
