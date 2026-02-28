@@ -379,6 +379,8 @@ async function processKeywordsData(
   locationCode: number,
   keywordId: number
 ) {
+  console.log(`[SEO] processKeywordsData started for: ${keyword}`);
+  
   const taskResult = await sql`
     SELECT id FROM seo_tasks 
     WHERE keyword_id = ${keywordId} AND endpoint_type = 'keywords_data'
@@ -390,6 +392,8 @@ async function processKeywordsData(
     UPDATE seo_tasks SET status = 'processing' WHERE id = ${taskId}
   `;
 
+  console.log(`[SEO] About to try Labs API for: ${keyword}`);
+  
   // Try Labs API first (usually available in free plans)
   try {
     const labsClient = await import('@/lib/dataforseo/labs-client');
