@@ -23,11 +23,11 @@ interface Keyword {
 
 interface KeywordsTableProps {
   keywords: Keyword[];
-  onRefresh: () => void;
+  onDelete?: (keywordId: number) => void;
   onViewResults: (keywordId: number) => void;
 }
 
-export default function KeywordsTable({ keywords, onRefresh, onViewResults }: KeywordsTableProps) {
+export default function KeywordsTable({ keywords, onDelete, onViewResults }: KeywordsTableProps) {
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const handleDelete = async (keywordId: number) => {
@@ -38,6 +38,14 @@ export default function KeywordsTable({ keywords, onRefresh, onViewResults }: Ke
     setDeletingId(keywordId);
 
     try {
+      // Если передан внешний обработчик, используем его
+      if (onDelete) {
+        await onDelete(keywordId);
+        setDeletingId(null);
+        return;
+      }
+
+      // Иначе выполняем удаление напрямую
       const response = await fetch(`/api/seo/delete/${keywordId}`, {
         method: 'DELETE',
       });
@@ -46,7 +54,6 @@ export default function KeywordsTable({ keywords, onRefresh, onViewResults }: Ke
 
       if (data.success) {
         toast.success('Ключевое слово удалено');
-        onRefresh();
       } else {
         toast.error(data.error || 'Ошибка при удалении');
       }
