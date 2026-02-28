@@ -1,0 +1,15 @@
+[1mdiff --git a/Dockerfile b/Dockerfile[m
+[1mindex 286836d..2e29b51 100644[m
+[1m--- a/Dockerfile[m
+[1m+++ b/Dockerfile[m
+[36m@@ -17,9 +17,8 @@[m [mWORKDIR /app[m
+ COPY --from=deps /app/node_modules ./node_modules[m
+ [m
+ # Cache buster - change this to force rebuild[m
+[31m-ARG CACHEBUST=2026-02-28-FINAL[m
+[32m+[m[32mARG CACHEBUST=2026-02-28-SEO-V2[m
+ RUN echo "Cache bust: $CACHEBUST"[m
+[31m-[m
+ COPY . .[m
+ [m
+ # Set environment variable to production[m
