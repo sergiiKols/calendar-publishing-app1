@@ -155,23 +155,36 @@ export class DataForSeoClient {
     limit?: number;
   }): Promise<KeywordSuggestionsResponse> {
     try {
+      // Use same endpoint as getKeywordsData but request more results
+      // This will return related keywords with their metrics
       const requestBody = [
         {
-          keyword: params.keyword,
-          language_code: params.language_code,
+          keywords: [params.keyword],
           location_code: params.location_code,
-          include_serp_info: true,
-          limit: params.limit || 100, // максимум предложений
+          language_code: params.language_code,
+          search_partners: false,
+          sort_by: 'relevance',
           include_seed_keyword: true,
-          date_from: this.getDateMonthsAgo(12),
-          date_to: this.getCurrentDate(),
         },
       ];
+
+      console.log('[DataForSEO Client] Keyword Suggestions Request:', {
+        endpoint: DATAFORSEO_ENDPOINTS.KEYWORD_SUGGESTIONS,
+        keyword: params.keyword,
+        limit: params.limit || 50,
+      });
 
       const response = await this.client.post<KeywordSuggestionsResponse>(
         DATAFORSEO_ENDPOINTS.KEYWORD_SUGGESTIONS,
         requestBody
       );
+
+      console.log('[DataForSEO Client] Keyword Suggestions Response:', {
+        status_code: response.data.status_code,
+        status_message: response.data.status_message,
+        cost: response.data.cost,
+        result_count: response.data.tasks?.[0]?.result?.length || 0,
+      });
 
       if (response.data.status_code !== 20000) {
         throw new Error(`DataForSEO API Error: ${response.data.status_message}`);

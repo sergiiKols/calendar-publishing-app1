@@ -545,6 +545,8 @@ async function processKeywordSuggestions(
   locationCode: number,
   keywordId: number
 ) {
+  console.log(`[SEO] processKeywordSuggestions started for: ${keyword}`);
+  
   const taskResult = await sql`
     SELECT id FROM seo_tasks 
     WHERE keyword_id = ${keywordId} AND endpoint_type = 'keyword_suggestions'
@@ -563,8 +565,22 @@ async function processKeywordSuggestions(
     limit: 50,
   });
 
+  console.log(`[SEO] Keyword Suggestions API Response:`, {
+    status_code: response.status_code,
+    tasks_count: response.tasks_count,
+    result_count: response.tasks?.[0]?.result?.length || 0,
+  });
+
   const suggestions = response.tasks[0]?.result || [];
   if (suggestions.length > 0) {
+    console.log(`[SEO] ✅ Got ${suggestions.length} keyword suggestions for "${keyword}"`);
+    console.log(`[SEO] Sample suggestions:`, suggestions.slice(0, 5).map((s: any) => ({
+      keyword: s.keyword,
+      search_volume: s.search_volume,
+      cpc: s.cpc,
+      competition_index: s.competition_index,
+    })));
+    
     await sql`
       INSERT INTO seo_results (
         keyword_id, task_id, endpoint_type, result_data
@@ -573,10 +589,14 @@ async function processKeywordSuggestions(
         ${keywordId}, ${taskId}, 'keyword_suggestions', ${JSON.stringify(suggestions)}
       )
     `;
+  } else {
+    console.log(`[SEO] ⚠️  No keyword suggestions returned for "${keyword}"`);
   }
 
   await sql`
     UPDATE seo_tasks SET status = 'completed', completed_at = NOW()
     WHERE id = ${taskId}
   `;
+  
+  console.log(`[SEO] processKeywordSuggestions completed for: ${keyword}`);
 }
