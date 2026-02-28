@@ -280,23 +280,75 @@ async function processKeywordsInBackground(
       const keywordId = keywordIds[i];
 
       try {
-        // 1. Keywords Data
-        await processKeywordsData(client, keyword, language, locationCode, keywordId);
+        let completedTasks = 0;
+        let failedTasks = 0;
 
-        // 2. SERP Analysis
-        await processSerpAnalysis(client, keyword, language, locationCode, keywordId);
+        // 1. Keywords Data (основной метод - обязательный)
+        try {
+          await processKeywordsData(client, keyword, language, locationCode, keywordId);
+          completedTasks++;
+        } catch (error) {
+          console.error(`[SEO] Keywords Data failed for ${keyword}:`, error);
+          failedTasks++;
+        }
 
-        // 3. Keyword Suggestions
-        await processKeywordSuggestions(client, keyword, language, locationCode, keywordId);
+        // 2. SERP Analysis (опциональный - может быть недоступен в плане)
+        try {
+          await processSerpAnalysis(client, keyword, language, locationCode, keywordId);
+          completedTasks++;
+        } catch (error: any) {
+          console.error(`[SEO] SERP Analysis failed for ${keyword}:`, error?.response?.data || error?.message);
+          // Помечаем задачу как failed, но продолжаем
+          const taskResult = await sql`
+            SELECT id FROM seo_tasks 
+            WHERE keyword_id = ${keywordId} AND endpoint_type = 'serp_analysis'
+            LIMIT 1
+          `;
+          if (taskResult.rows.length > 0) {
+            await sql`
+              UPDATE seo_tasks 
+              SET status = 'failed', 
+                  completed_at = NOW(),
+                  error_message = ${error?.response?.data?.status_message || error?.message || 'SERP API not available'}
+              WHERE id = ${taskResult.rows[0].id}
+            `;
+          }
+          failedTasks++;
+        }
 
-        // Обновляем статус ключевого слова
+        // 3. Keyword Suggestions (опциональный)
+        try {
+          await processKeywordSuggestions(client, keyword, language, locationCode, keywordId);
+          completedTasks++;
+        } catch (error: any) {
+          console.error(`[SEO] Keyword Suggestions failed for ${keyword}:`, error?.response?.data || error?.message);
+          // Помечаем задачу как failed, но продолжаем
+          const taskResult = await sql`
+            SELECT id FROM seo_tasks 
+            WHERE keyword_id = ${keywordId} AND endpoint_type = 'keyword_suggestions'
+            LIMIT 1
+          `;
+          if (taskResult.rows.length > 0) {
+            await sql`
+              UPDATE seo_tasks 
+              SET status = 'failed', 
+                  completed_at = NOW(),
+                  error_message = ${error?.response?.data?.status_message || error?.message || 'Keyword Suggestions API not available'}
+              WHERE id = ${taskResult.rows[0].id}
+            `;
+          }
+          failedTasks++;
+        }
+
+        // Обновляем статус ключевого слова (completed если хотя бы 1 задача успешна, иначе failed)
+        const finalStatus = completedTasks > 0 ? 'completed' : 'failed';
         await sql`
           UPDATE seo_keywords 
-          SET status = 'completed', updated_at = NOW()
+          SET status = ${finalStatus}, updated_at = NOW()
           WHERE id = ${keywordId}
         `;
 
-        console.log(`[SEO] Completed processing for keyword: ${keyword}`);
+        console.log(`[SEO] Completed processing for keyword: ${keyword} (${completedTasks}/${completedTasks + failedTasks} tasks successful)`);
 
       } catch (error) {
         console.error(`[SEO] Error processing keyword ${keyword}:`, error);
