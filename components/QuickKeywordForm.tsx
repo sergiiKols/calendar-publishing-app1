@@ -14,6 +14,7 @@ interface QuickKeywordFormProps {
   onClose: () => void;
   onSuccess: () => void;
   preselectedProjectId?: number;
+  preselectedCategoryId?: number;
 }
 
 interface Project {
@@ -25,13 +26,16 @@ interface Project {
 export default function QuickKeywordForm({ 
   onClose, 
   onSuccess, 
-  preselectedProjectId 
+  preselectedProjectId,
+  preselectedCategoryId
 }: QuickKeywordFormProps) {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
     projectId: preselectedProjectId?.toString() || '',
+    categoryId: preselectedCategoryId?.toString() || '',
     keywords: '',
     language: 'ru',
     location: '2643', // Russia
@@ -44,6 +48,14 @@ export default function QuickKeywordForm({
   useEffect(() => {
     fetchProjects();
   }, []);
+
+  useEffect(() => {
+    if (formData.projectId) {
+      fetchCategories(parseInt(formData.projectId));
+    } else {
+      setCategories([]);
+    }
+  }, [formData.projectId]);
 
   const fetchProjects = async () => {
     try {
@@ -58,6 +70,18 @@ export default function QuickKeywordForm({
     } catch (error) {
       console.error('Failed to fetch projects:', error);
       toast.error('Ошибка загрузки проектов');
+    }
+  };
+
+  const fetchCategories = async (projectId: number) => {
+    try {
+      const response = await fetch(`/api/categories?project_id=${projectId}`);
+      const data = await response.json();
+      if (data.success) {
+        setCategories(data.categories || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
     }
   };
 
@@ -91,7 +115,8 @@ export default function QuickKeywordForm({
           language: formData.language,
           location_code: formData.location,
           location_name: formData.locationName,
-          project_id: parseInt(formData.projectId)
+          project_id: parseInt(formData.projectId),
+          category_id: formData.categoryId ? parseInt(formData.categoryId) : null
         })
       });
 
@@ -152,7 +177,9 @@ export default function QuickKeywordForm({
             </label>
             <select
               value={formData.projectId}
-              onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, projectId: e.target.value, categoryId: '' });
+              }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             >
@@ -164,6 +191,32 @@ export default function QuickKeywordForm({
               ))}
             </select>
           </div>
+
+          {/* Category Selection */}
+          {formData.projectId && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Направление (необязательно)
+              </label>
+              <select
+                value={formData.categoryId}
+                onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Без направления</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name} ({category.keywords_count} слов)
+                  </option>
+                ))}
+              </select>
+              {categories.length === 0 && (
+                <p className="mt-1 text-xs text-gray-500">
+                  В проекте пока нет направлений. Создайте их в рабочей зоне проекта.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Language & Location */}
           <div className="grid grid-cols-2 gap-4">

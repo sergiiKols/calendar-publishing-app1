@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     // Парсим запрос
     const body: SubmitKeywordsRequest = await request.json();
-    const { keywords, language, location_code, location_name, project_id } = body;
+    const { keywords, language, location_code, location_name, project_id, category_id } = body;
 
     // Валидация
     if (!keywords || !Array.isArray(keywords) || keywords.length === 0) {
@@ -94,7 +94,8 @@ export async function POST(request: NextRequest) {
       const keywordResult = await sql`
         INSERT INTO seo_keywords (
           user_id, 
-          project_id, 
+          project_id,
+          category_id,
           keyword, 
           language, 
           location_code, 
@@ -103,7 +104,8 @@ export async function POST(request: NextRequest) {
         )
         VALUES (
           ${userId}, 
-          ${project_id || null}, 
+          ${project_id || null},
+          ${category_id || null},
           ${keyword.trim()}, 
           ${language}, 
           ${location_code}, 

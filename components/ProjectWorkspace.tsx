@@ -16,6 +16,7 @@ import ClusterDetailsModal from './ClusterDetailsModal';
 import SeoStatsCards from './SeoStatsCards';
 import ClusterVisualization from './ClusterVisualization';
 import FilteringPanel from './FilteringPanel';
+import CategoryManager from './CategoryManager';
 import toast from 'react-hot-toast';
 
 interface Project {
@@ -70,6 +71,9 @@ export default function ProjectWorkspace({ project, onBack }: ProjectWorkspacePr
     location: '',
     language: ''
   });
+
+  // Categories
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -152,6 +156,8 @@ export default function ProjectWorkspace({ project, onBack }: ProjectWorkspacePr
     if (filters.status && kw.status !== filters.status) return false;
     if (filters.location && kw.location_name !== filters.location) return false;
     if (filters.language && kw.language !== filters.language) return false;
+    // Фильтр по категории
+    if (selectedCategoryId !== null && kw.category_id !== selectedCategoryId) return false;
     return true;
   });
 
@@ -253,61 +259,79 @@ export default function ProjectWorkspace({ project, onBack }: ProjectWorkspacePr
         />
       )}
 
-      {/* Keywords Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Ключевые слова ({filteredKeywords.length})
-          </h2>
-        </div>
-        <KeywordsTable
-          keywords={filteredKeywords}
-          onDelete={handleDeleteKeyword}
-          onViewResults={handleViewResults}
-        />
-      </div>
-
-      {/* Clusters */}
-      {clusters.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Семантические кластеры ({clusters.length})
-          </h2>
-          <ClusterVisualization
-            clusters={clusters}
-            onViewDetails={(id) => setSelectedClusterId(id)}
-            onExport={(id) => console.log('Export cluster:', id)}
-            onDelete={(id) => console.log('Delete cluster:', id)}
-          />
-        </div>
-      )}
-
-      {/* Empty State */}
-      {keywords.length === 0 && clusters.length === 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <Sparkles size={48} className="mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Начните работу с проектом
-          </h3>
-          <p className="text-gray-600 mb-6">
-            Добавьте ключевые слова или соберите семантическое ядро
-          </p>
-          <div className="flex justify-center gap-3">
-            <button
-              onClick={() => setShowQuickForm(true)}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Добавить ключевые слова
-            </button>
-            <button
-              onClick={() => setShowClusterForm(true)}
-              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-            >
-              Собрать семядро
-            </button>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Sidebar - Categories */}
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sticky top-4">
+            <CategoryManager
+              projectId={project.id}
+              selectedCategoryId={selectedCategoryId}
+              onSelectCategory={setSelectedCategoryId}
+              onCategoriesChange={fetchData}
+            />
           </div>
         </div>
-      )}
+
+        {/* Main Content */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* Keywords Table */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Ключевые слова ({filteredKeywords.length})
+              </h2>
+            </div>
+            <KeywordsTable
+              keywords={filteredKeywords}
+              onDelete={handleDeleteKeyword}
+              onViewResults={handleViewResults}
+            />
+          </div>
+
+          {/* Clusters */}
+          {clusters.length > 0 && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                Семантические кластеры ({clusters.length})
+              </h2>
+              <ClusterVisualization
+                clusters={clusters}
+                onViewDetails={(id) => setSelectedClusterId(id)}
+                onExport={(id) => console.log('Export cluster:', id)}
+                onDelete={(id) => console.log('Delete cluster:', id)}
+              />
+            </div>
+          )}
+
+          {/* Empty State */}
+          {keywords.length === 0 && clusters.length === 0 && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+              <Sparkles size={48} className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Начните работу с проектом
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Добавьте ключевые слова или соберите семантическое ядро
+              </p>
+              <div className="flex justify-center gap-3">
+                <button
+                  onClick={() => setShowQuickForm(true)}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Добавить ключевые слова
+                </button>
+                <button
+                  onClick={() => setShowClusterForm(true)}
+                  className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  Собрать семядро
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Modals */}
       {showQuickForm && (
@@ -315,6 +339,7 @@ export default function ProjectWorkspace({ project, onBack }: ProjectWorkspacePr
           onClose={() => setShowQuickForm(false)}
           onSuccess={handleRefresh}
           preselectedProjectId={project.id}
+          preselectedCategoryId={selectedCategoryId || undefined}
         />
       )}
 
