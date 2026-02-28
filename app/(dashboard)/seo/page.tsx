@@ -8,14 +8,14 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Plus, RefreshCw, Filter } from 'lucide-react';
+import { Plus, RefreshCw, Filter, Sparkles } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import KeywordSubmitForm from '@/components/KeywordSubmitForm';
+import SemanticClusterForm from '@/components/SemanticClusterForm';
 import KeywordsTable from '@/components/KeywordsTable';
 import KeywordResultsModal from '@/components/KeywordResultsModal';
 import SeoStatsCards from '@/components/SeoStatsCards';
-
-interface Keyword {
+import ClusterVisualization from '@/components/ClusterVisualization';interface Keyword {
   id: number;
   keyword: string;
   language: string;
@@ -33,13 +33,14 @@ interface Project {
 }
 
 export default function SeoPage() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
 
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSubmitForm, setShowSubmitForm] = useState(false);
+  const [showClusterForm, setShowClusterForm] = useState(false);
   const [selectedKeywordId, setSelectedKeywordId] = useState<number | null>(null);
   
   // Filters
@@ -55,8 +56,10 @@ export default function SeoPage() {
     failed: 0,
   });
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
+// Wizard state
+  const [clusters, setClusters] = useState<any[]>([]);
+
+  useEffect(() => {    if (status === 'unauthenticated') {
       router.push('/login');
     } else if (status === 'authenticated') {
       fetchData();
@@ -124,7 +127,41 @@ export default function SeoPage() {
     setSelectedKeywordId(null);
   };
 
-  if (status === 'loading') {
+  const handleClusterSuccess = (clusterId: number) => {
+    setShowClusterForm(false);
+    // Загрузить кластеры
+    fetchClusters(clusterId);
+  };
+  const fetchClusters = async (clusterId?: number) => {
+    try {
+      const url = clusterId 
+        ? `/api/seo/semantic-cluster/${clusterId}`
+        : '/api/seo/semantic-cluster';
+      const response = await fetch(url);
+      const data = await response.json();
+      if (data.success) {
+        setClusters(data.clusters || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch clusters:', error);
+    }
+  };
+
+  const handleFilterChange = (filters: any) => {
+    console.log('Filters changed:', filters);
+  };
+
+  const handleApplyFilters = () => {
+    console.log('Filters applied');
+  };
+
+  const handleExportCSV = () => {
+    console.log('Export CSV');
+  };
+
+  const handleRunSERP = (count: number) => {
+    console.log('Run SERP for', count, 'keywords');
+  };  if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -186,9 +223,15 @@ export default function SeoPage() {
                 <Plus size={18} />
                 Добавить ключевые слова
               </button>
+              <button
+                onClick={() => setShowClusterForm(true)}
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2 transition-colors"
+              >
+                <Sparkles size={18} />
+                Собрать семядро
+              </button>
             </div>
           </div>
-
           {/* Filters Panel */}
           {showFilters && (
             <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -277,12 +320,32 @@ export default function SeoPage() {
               <li>Топ-10 позиций в поисковой выдаче</li>
               <li>Предложениях похожих ключевых слов</li>
             </ul>
-            <button
-              onClick={() => setShowSubmitForm(true)}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Добавить первые ключевые слова
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSubmitForm(true)}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Добавить ключевые слова
+              </button>
+              <button
+                onClick={() => setShowClusterForm(true)}
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+              >
+                <Sparkles size={18} />
+                Собрать семядро (авто)
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Clusters Section */}
+        {clusters.length > 0 && (
+          <div className="mt-8">
+            <ClusterVisualization
+              clusters={clusters}
+              onExport={(id) => console.log('Export cluster:', id)}
+              onDelete={(id) => console.log('Delete cluster:', id)}
+            />
           </div>
         )}
       </div>
@@ -292,6 +355,13 @@ export default function SeoPage() {
         <KeywordSubmitForm
           onClose={() => setShowSubmitForm(false)}
           onSuccess={handleRefresh}
+        />
+      )}
+
+      {showClusterForm && (
+        <SemanticClusterForm
+          onClose={() => setShowClusterForm(false)}
+          onSuccess={handleClusterSuccess}
         />
       )}
 

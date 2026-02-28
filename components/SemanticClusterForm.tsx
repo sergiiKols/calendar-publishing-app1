@@ -75,7 +75,12 @@ export default function SemanticClusterForm({ onClose, onSuccess }: SemanticClus
       .filter(s => s.length > 0);
 
     if (seedList.length === 0) {
-      toast.error('Введите хотя бы 1 seed-ключевое слово');
+      toast.error('Введите хотя бы 3 seed-ключевых слова');
+      return;
+    }
+
+    if (seedList.length < 3) {
+      toast.error('Минимум 3 seed-ключевых слова для расширения семантики');
       return;
     }
 
@@ -83,7 +88,6 @@ export default function SemanticClusterForm({ onClose, onSuccess }: SemanticClus
       toast.error('Максимум 5 seed-ключевых слов');
       return;
     }
-
     setIsSubmitting(true);
     setProgress('Инициализация...');
 
@@ -150,9 +154,8 @@ export default function SemanticClusterForm({ onClose, onSuccess }: SemanticClus
             <div>
               <h2 className="text-2xl font-bold">Сбор семантического ядра</h2>
               <p className="text-purple-100 text-sm mt-1">
-                Автоматический сбор 100+ ключевых слов из seed-фраз
-              </p>
-            </div>
+                Автоматический сбор 100+ ключевых слов из 3-5 seed-фраз
+              </p>            </div>
           </div>
           <button
             onClick={onClose}
@@ -182,9 +185,8 @@ export default function SemanticClusterForm({ onClose, onSuccess }: SemanticClus
               disabled={isSubmitting}
             />
             <p className="mt-2 text-xs text-gray-500">
-              Из каждого seed-слова будет сгенерировано ~20-50 связанных ключевых слов
-            </p>
-          </div>
+              Введите от 3 до 5 seed-ключевых слов для расширения семантики
+            </p>          </div>
 
           {/* Region and Language */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
