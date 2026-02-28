@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Calendar, Filter, Settings, LogOut } from 'lucide-react';
 import { signOut } from 'next-auth/react';
+import ModuleNavigation from '@/components/ModuleNavigation';
 import InboxTable from '@/components/InboxTable';
 import CalendarGrid from '@/components/CalendarGrid';
 import ScheduleModal from '@/components/ScheduleModal';
@@ -146,6 +147,9 @@ export default function CalendarPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Навигация между модулями */}
+      <ModuleNavigation />
+      
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-4">
