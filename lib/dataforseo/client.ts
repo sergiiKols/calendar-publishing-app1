@@ -75,10 +75,23 @@ export class DataForSeoClient {
         },
       ];
 
+      console.log('[DataForSEO Client] Request:', {
+        endpoint: DATAFORSEO_ENDPOINTS.KEYWORDS_FOR_KEYWORDS,
+        body: JSON.stringify(requestBody, null, 2),
+      });
+
       const response = await this.client.post<KeywordsDataResponse>(
         DATAFORSEO_ENDPOINTS.KEYWORDS_FOR_KEYWORDS,
         requestBody
       );
+
+      console.log('[DataForSEO Client] Response:', {
+        status_code: response.data.status_code,
+        status_message: response.data.status_message,
+        cost: response.data.cost,
+        tasks_count: response.data.tasks_count,
+        result_sample: response.data.tasks?.[0]?.result?.[0] || 'No result',
+      });
 
       if (response.data.status_code !== 20000) {
         throw new Error(`DataForSEO API Error: ${response.data.status_message}`);

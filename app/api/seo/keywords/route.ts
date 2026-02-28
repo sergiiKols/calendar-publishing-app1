@@ -429,12 +429,15 @@ async function processKeywordsData(
     location_code: locationCode,
   });
 
+  console.log(`[SEO] Full API Response:`, JSON.stringify(response, null, 2));
+  
   const data = response.tasks[0]?.result?.[0];
   if (data) {
     console.log(`[SEO] Keywords Data API success! Data:`, { 
       search_volume: data.search_volume, 
       cpc: data.cpc,
-      competition_index: data.competition_index 
+      competition_index: data.competition_index,
+      full_data: JSON.stringify(data, null, 2)
     });
     
     // Convert Google Ads competition index to 0-1 scale
