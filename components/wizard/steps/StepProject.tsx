@@ -30,6 +30,9 @@ export default function StepProject({
   onNewProjectNameChange
 }: StepProjectProps) {
   const [showNewProjectForm, setShowNewProjectForm] = useState(false);
+  
+  // Debug: log projects
+  console.log('StepProject - projects:', projects, 'count:', projects.length);
 
   const handleSelectExisting = (projectId: string) => {
     onProjectSelect(projectId);
