@@ -10,10 +10,10 @@ import { Globe, MapPin } from 'lucide-react';
 interface StepSettingsProps {
   language: string;
   location: string;
-  languageOptions: Array<{ code: string; name: string }>;
-  locationOptions: Array<{ code: string; name: string }>;
+  languageOptions: Array<{ value: string; label: string }>;
+  locationOptions: Array<{ value: string; label: string; language?: string }>;
   onLanguageChange: (language: string) => void;
-  onLocationChange: (location: string) => void;
+  onLocationChange: (locationCode: string, locationName: string) => void;
 }
 
 export default function StepSettings({
@@ -48,14 +48,14 @@ export default function StepSettings({
         >
           <option value="">Выберите язык...</option>
           {languageOptions.map((lang) => (
-            <option key={lang.code} value={lang.code}>
-              {lang.name}
+            <option key={lang.value} value={lang.value}>
+              {lang.label}
             </option>
           ))}
         </select>
         {language && (
           <p className="mt-2 text-sm text-green-600 flex items-center gap-1">
-            ✓ Выбран язык: <strong>{languageOptions.find(l => l.code === language)?.name}</strong>
+            ✓ Выбран язык: <strong>{languageOptions.find(l => l.value === language)?.label}</strong>
           </p>
         )}
       </div>
@@ -68,19 +68,24 @@ export default function StepSettings({
         </label>
         <select
           value={location}
-          onChange={(e) => onLocationChange(e.target.value)}
+          onChange={(e) => {
+            const selectedOption = locationOptions.find(l => l.value === e.target.value);
+            if (selectedOption) {
+              onLocationChange(selectedOption.value, selectedOption.label);
+            }
+          }}
           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
         >
           <option value="">Выберите локацию...</option>
           {locationOptions.map((loc) => (
-            <option key={loc.code} value={loc.code}>
-              {loc.name}
+            <option key={loc.value} value={loc.value}>
+              {loc.label}
             </option>
           ))}
         </select>
         {location && (
           <p className="mt-2 text-sm text-green-600 flex items-center gap-1">
-            ✓ Выбрана локация: <strong>{locationOptions.find(l => l.code === location)?.name}</strong>
+            ✓ Выбрана локация: <strong>{locationOptions.find(l => l.value === location)?.label}</strong>
           </p>
         )}
       </div>

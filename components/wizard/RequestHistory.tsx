@@ -87,7 +87,7 @@ export default function RequestHistory({ onLoadFromHistory }: RequestHistoryProp
                   </span>
                 </div>
                 <div className="text-xs text-gray-600">
-                  {item.language} • {item.location} • {item.keywordsCount} слов
+                  {item.language} • {item.locationName} • {item.keywordsCount} слов
                 </div>
                 {item.keywordsPreview.length > 0 && (
                   <div className="text-xs text-gray-500 mt-1 truncate">
@@ -112,7 +112,8 @@ export function saveToHistory(
   projectId: string,
   projectName: string,
   language: string,
-  location: string,
+  locationCode: string,
+  locationName: string,
   keywords: string
 ) {
   try {
@@ -124,7 +125,8 @@ export function saveToHistory(
       projectId,
       projectName,
       language,
-      location,
+      locationCode,
+      locationName,
       keywordsCount: keywordsList.length,
       keywordsPreview: keywordsList.slice(0, 3).map(k => k.trim())
     };

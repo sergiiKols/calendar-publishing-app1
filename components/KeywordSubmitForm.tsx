@@ -45,7 +45,8 @@ export default function KeywordSubmitForm({ onClose, onSuccess }: KeywordSubmitF
     projectId: '',
     projectName: '',
     language: 'ru',
-    location: 'Russia',
+    location: '2643', // Russia code
+    locationName: 'Russia',
     keywords: ''
   });
 
@@ -101,7 +102,8 @@ export default function KeywordSubmitForm({ onClose, onSuccess }: KeywordSubmitF
       projectId: item.projectId,
       projectName: item.projectName,
       language: item.language,
-      location: item.location,
+      location: item.locationCode,
+      locationName: item.locationName,
       keywords: '' // Не загружаем ключевые слова для безопасности
     });
     setCurrentStep(3); // Переходим сразу на ввод ключевых слов
@@ -208,7 +210,8 @@ export default function KeywordSubmitForm({ onClose, onSuccess }: KeywordSubmitF
         body: JSON.stringify({
           keywords: keywordList,
           language: formData.language,
-          location_name: formData.location,
+          location_code: formData.location,
+          location_name: formData.locationName,
           project_id: parseInt(projectId)
         })
       });
@@ -226,6 +229,7 @@ export default function KeywordSubmitForm({ onClose, onSuccess }: KeywordSubmitF
           projectName,
           formData.language,
           formData.location,
+          formData.locationName,
           formData.keywords
         );
 
@@ -274,11 +278,11 @@ export default function KeywordSubmitForm({ onClose, onSuccess }: KeywordSubmitF
   };
 
   const getLanguageName = () => {
-    return languageOptions.find(l => l.code === formData.language)?.name || formData.language;
+    return languageOptions.find(l => l.value === formData.language)?.label || formData.language;
   };
 
   const getLocationName = () => {
-    return locationOptions.find(l => l.code === formData.location)?.name || formData.location;
+    return formData.locationName || locationOptions.find(l => l.value === formData.location)?.label || formData.location;
   };
 
   return (
@@ -344,7 +348,7 @@ export default function KeywordSubmitForm({ onClose, onSuccess }: KeywordSubmitF
                 languageOptions={languageOptions}
                 locationOptions={locationOptions}
                 onLanguageChange={(lang) => setFormData({ ...formData, language: lang })}
-                onLocationChange={(loc) => setFormData({ ...formData, location: loc })}
+                onLocationChange={(code, name) => setFormData({ ...formData, location: code, locationName: name })}
               />
             )}
 

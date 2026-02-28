@@ -6,7 +6,8 @@ export interface WizardFormData {
   projectId: string;
   projectName: string;
   language: string;
-  location: string;
+  location: string; // location code (например "2643")
+  locationName: string; // location name (например "Russia")
   keywords: string;
 }
 
@@ -16,7 +17,8 @@ export interface RequestHistory {
   projectId: string;
   projectName: string;
   language: string;
-  location: string;
+  locationCode: string;
+  locationName: string;
   keywordsCount: number;
   keywordsPreview: string[];
 }
