@@ -16,6 +16,8 @@ import type { SubmitKeywordsRequest, SubmitKeywordsResponse } from '@/lib/datafo
  * Отправка ключевых слов на анализ в DataForSEO
  */
 export async function POST(request: NextRequest) {
+  console.log('[SEO API] ===== POST REQUEST RECEIVED - CODE VERSION: 2026-02-28-v3 =====');
+  
   try {
     // Проверка авторизации
     const session = await getServerSession(authOptions);
