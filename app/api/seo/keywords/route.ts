@@ -419,83 +419,47 @@ async function processKeywordsData(
     UPDATE seo_tasks SET status = 'processing' WHERE id = ${taskId}
   `;
 
-  console.log(`[SEO] About to try Labs API for: ${keyword}`);
+  console.log(`[SEO] Using Keywords Data API (Google Ads) for: ${keyword}`);
   
-  // Try Labs API first (usually available in free plans)
-  try {
-    const labsClient = await import('@/lib/dataforseo/labs-client');
-    console.log(`[SEO] Trying Labs API for keyword: ${keyword}`);
-    
-    const response = await labsClient.getLabsKeywordsForKeywords({
-      seeds: [keyword],
-      language_code: language,
-      location_code: locationCode,
-      limit: 1, // We only need metrics for the original keyword
+  // Use Keywords Data API (Google Ads Search Volume)
+  // This is the main API endpoint that should be available in all plans
+  const response = await client.getKeywordsData({
+    keywords: [keyword],
+    language_code: language,
+    location_code: locationCode,
+  });
+
+  const data = response.tasks[0]?.result?.[0];
+  if (data) {
+    console.log(`[SEO] Keywords Data API success! Data:`, { 
+      search_volume: data.search_volume, 
+      cpc: data.cpc,
+      competition_index: data.competition_index 
     });
-
-    const data = response.tasks?.[0]?.result?.[0]?.items?.[0];
-    if (data) {
-      console.log(`[SEO] Labs API success! Data:`, { 
-        search_volume: data.keyword_info?.search_volume, 
-        cpc: data.keyword_info?.cpc,
-        competition: data.keyword_info?.competition 
-      });
-      
-      await sql`
-        INSERT INTO seo_results (
-          keyword_id, task_id, endpoint_type, result_data,
-          search_volume, cpc, competition
-        )
-        VALUES (
-          ${keywordId}, ${taskId}, 'keywords_data', ${JSON.stringify(data)},
-          ${data.keyword_info?.search_volume || null}, 
-          ${data.keyword_info?.cpc || null}, 
-          ${data.keyword_info?.competition || null}
-        )
-      `;
-    } else {
-      console.log(`[SEO] Labs API returned no data for keyword: ${keyword}`);
-    }
-
-    await sql`
-      UPDATE seo_tasks SET status = 'completed', completed_at = NOW()
-      WHERE id = ${taskId}
-    `;
-  } catch (labsError: any) {
-    console.error('[SEO] Labs API failed:', labsError?.response?.data || labsError?.message);
-    console.log('[SEO] Falling back to Keywords Data API...');
     
-    // Fallback to Keywords Data API if Labs fails
-    const response = await client.getKeywordsData({
-      keywords: [keyword],
-      language_code: language,
-      location_code: locationCode,
-    });
-
-    const data = response.tasks[0]?.result?.[0];
-    if (data) {
-      // Convert Google Ads competition string to number (LOW/MEDIUM/HIGH -> 0-1 scale)
-      const competitionValue = data.competition_index !== undefined 
-        ? data.competition_index / 100  // Google Ads returns 0-100, convert to 0-1
-        : null;
-      
-      await sql`
-        INSERT INTO seo_results (
-          keyword_id, task_id, endpoint_type, result_data,
-          search_volume, cpc, competition
-        )
-        VALUES (
-          ${keywordId}, ${taskId}, 'keywords_data', ${JSON.stringify(data)},
-          ${data.search_volume || null}, ${data.cpc || null}, ${competitionValue}
-        )
-      `;
-    }
-
+    // Convert Google Ads competition index to 0-1 scale
+    const competitionValue = data.competition_index !== undefined 
+      ? data.competition_index / 100  // Google Ads returns 0-100, convert to 0-1
+      : null;
+    
     await sql`
-      UPDATE seo_tasks SET status = 'completed', completed_at = NOW()
-      WHERE id = ${taskId}
+      INSERT INTO seo_results (
+        keyword_id, task_id, endpoint_type, result_data,
+        search_volume, cpc, competition
+      )
+      VALUES (
+        ${keywordId}, ${taskId}, 'keywords_data', ${JSON.stringify(data)},
+        ${data.search_volume || null}, ${data.cpc || null}, ${competitionValue}
+      )
     `;
+  } else {
+    console.log(`[SEO] Keywords Data API returned no data for keyword: ${keyword}`);
   }
+
+  await sql`
+    UPDATE seo_tasks SET status = 'completed', completed_at = NOW()
+    WHERE id = ${taskId}
+  `;
 }
 
 async function processSerpAnalysis(
