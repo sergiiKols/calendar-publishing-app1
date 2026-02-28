@@ -454,6 +454,11 @@ async function processKeywordsData(
 
     const data = response.tasks[0]?.result?.[0];
     if (data) {
+      // Convert Google Ads competition string to number (LOW/MEDIUM/HIGH -> 0-1 scale)
+      const competitionValue = data.competition_index !== undefined 
+        ? data.competition_index / 100  // Google Ads returns 0-100, convert to 0-1
+        : null;
+      
       await sql`
         INSERT INTO seo_results (
           keyword_id, task_id, endpoint_type, result_data,
@@ -461,7 +466,7 @@ async function processKeywordsData(
         )
         VALUES (
           ${keywordId}, ${taskId}, 'keywords_data', ${JSON.stringify(data)},
-          ${data.search_volume || null}, ${data.cpc || null}, ${data.competition || null}
+          ${data.search_volume || null}, ${data.cpc || null}, ${competitionValue}
         )
       `;
     }
