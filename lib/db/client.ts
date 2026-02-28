@@ -155,20 +155,38 @@ export async function deleteArticle(articleId: number) {
 export async function createProject(data: {
   user_id: number;
   name: string;
-  description?: string;
+  description?: string | null;
   color?: string;
 }) {
-  const result = await sql`
-    INSERT INTO projects (user_id, name, description, color)
-    VALUES (
-      ${data.user_id},
-      ${data.name},
-      ${data.description || ''},
-      ${data.color || '#3B82F6'}
-    )
-    RETURNING *
-  `;
-  return result.rows[0];
+  // If description column doesn't exist, create without it
+  try {
+    const result = await sql`
+      INSERT INTO projects (user_id, name, description, color)
+      VALUES (
+        ${data.user_id},
+        ${data.name},
+        ${data.description || null},
+        ${data.color || '#3B82F6'}
+      )
+      RETURNING *
+    `;
+    return result.rows[0];
+  } catch (error: any) {
+    // If error is "column description does not exist", try without it
+    if (error.code === '42703' && error.message.includes('description')) {
+      const result = await sql`
+        INSERT INTO projects (user_id, name, color)
+        VALUES (
+          ${data.user_id},
+          ${data.name},
+          ${data.color || '#3B82F6'}
+        )
+        RETURNING *
+      `;
+      return result.rows[0];
+    }
+    throw error;
+  }
 }
 
 export async function getOrCreateProjectFromSMI(data: {
@@ -186,32 +204,67 @@ export async function getOrCreateProjectFromSMI(data: {
   
   if (existing.rows.length > 0) {
     // Обновляем название, описание, цвет и время синхронизации
-    const updated = await sql`
-      UPDATE projects 
-      SET name = ${data.name},
-          description = ${data.description || ''},
-          color = ${data.color || '#3B82F6'},
-          synced_at = NOW()
-      WHERE external_project_id = ${data.external_project_id}
-      RETURNING *
-    `;
-    return updated.rows[0];
+    try {
+      const updated = await sql`
+        UPDATE projects 
+        SET name = ${data.name},
+            description = ${data.description || null},
+            color = ${data.color || '#3B82F6'},
+            synced_at = NOW()
+        WHERE external_project_id = ${data.external_project_id}
+        RETURNING *
+      `;
+      return updated.rows[0];
+    } catch (error: any) {
+      // If description column doesn't exist, update without it
+      if (error.code === '42703' && error.message.includes('description')) {
+        const updated = await sql`
+          UPDATE projects 
+          SET name = ${data.name},
+              color = ${data.color || '#3B82F6'},
+              synced_at = NOW()
+          WHERE external_project_id = ${data.external_project_id}
+          RETURNING *
+        `;
+        return updated.rows[0];
+      }
+      throw error;
+    }
   }
   
   // Создаём новый проект
-  const result = await sql`
-    INSERT INTO projects (user_id, external_project_id, name, description, color, synced_at)
-    VALUES (
-      ${data.user_id},
-      ${data.external_project_id},
-      ${data.name},
-      ${data.description || ''},
-      ${data.color || '#3B82F6'},
-      NOW()
-    )
-    RETURNING *
-  `;
-  return result.rows[0];
+  try {
+    const result = await sql`
+      INSERT INTO projects (user_id, external_project_id, name, description, color, synced_at)
+      VALUES (
+        ${data.user_id},
+        ${data.external_project_id},
+        ${data.name},
+        ${data.description || null},
+        ${data.color || '#3B82F6'},
+        NOW()
+      )
+      RETURNING *
+    `;
+    return result.rows[0];
+  } catch (error: any) {
+    // If description column doesn't exist, create without it
+    if (error.code === '42703' && error.message.includes('description')) {
+      const result = await sql`
+        INSERT INTO projects (user_id, external_project_id, name, color, synced_at)
+        VALUES (
+          ${data.user_id},
+          ${data.external_project_id},
+          ${data.name},
+          ${data.color || '#3B82F6'},
+          NOW()
+        )
+        RETURNING *
+      `;
+      return result.rows[0];
+    }
+    throw error;
+  }
 }
 
 export async function getProjects(userId: number) {

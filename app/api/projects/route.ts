@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     const project = await createProject({
       user_id: userId,
       name,
-      description,
+      description: description || null, // Allow null instead of empty string
       color: color || '#3B82F6'
     });
     
