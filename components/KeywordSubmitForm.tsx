@@ -340,6 +340,7 @@ export default function KeywordSubmitForm({ onClose, onSuccess }: KeywordSubmitF
                   newProjectName={formData.projectName}
                   onProjectSelect={(id) => setFormData({ ...formData, projectId: id })}
                   onNewProjectNameChange={(name) => setFormData({ ...formData, projectName: name })}
+                  onProjectsChange={fetchProjects}
                 />
                 <RequestHistory onLoadFromHistory={handleLoadFromHistory} />
               </>

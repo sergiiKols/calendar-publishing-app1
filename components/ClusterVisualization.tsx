@@ -29,12 +29,14 @@ interface ClusterVisualizationProps {
   clusters: Cluster[];
   onExport?: (clusterId: number) => void;
   onDelete?: (clusterId: number) => void;
+  onViewDetails?: (clusterId: number) => void;
 }
 
 export default function ClusterVisualization({
   clusters,
   onExport,
   onDelete,
+  onViewDetails,
 }: ClusterVisualizationProps) {
   const [expandedClusters, setExpandedClusters] = useState<number[]>([]);
 
@@ -126,6 +128,13 @@ export default function ClusterVisualization({
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  <button
+                    onClick={() => onViewDetails?.(cluster.id)}
+                    className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                    title="Детальный просмотр"
+                  >
+                    <Info size={18} />
+                  </button>
                   <button
                     onClick={() => onExport?.(cluster.id)}
                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"

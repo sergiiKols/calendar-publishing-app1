@@ -11,9 +11,11 @@ import { useRouter } from 'next/navigation';
 import { Plus, RefreshCw, Filter, Sparkles } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import KeywordSubmitForm from '@/components/KeywordSubmitForm';
+import QuickKeywordForm from '@/components/QuickKeywordForm';
 import SemanticClusterForm from '@/components/SemanticClusterForm';
 import KeywordsTable from '@/components/KeywordsTable';
 import KeywordResultsModal from '@/components/KeywordResultsModal';
+import ClusterDetailsModal from '@/components/ClusterDetailsModal';
 import SeoStatsCards from '@/components/SeoStatsCards';
 import ClusterVisualization from '@/components/ClusterVisualization';interface Keyword {
   id: number;
@@ -40,8 +42,10 @@ export default function SeoPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSubmitForm, setShowSubmitForm] = useState(false);
+  const [showQuickForm, setShowQuickForm] = useState(false);
   const [showClusterForm, setShowClusterForm] = useState(false);
   const [selectedKeywordId, setSelectedKeywordId] = useState<number | null>(null);
+  const [selectedClusterId, setSelectedClusterId] = useState<number | null>(null);
   
   // Filters
   const [filterProject, setFilterProject] = useState<string>('');
@@ -217,11 +221,19 @@ export default function SeoPage() {
                 Обновить
               </button>
               <button
-                onClick={() => setShowSubmitForm(true)}
+                onClick={() => setShowQuickForm(true)}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
               >
                 <Plus size={18} />
                 Добавить ключевые слова
+              </button>
+              <button
+                onClick={() => setShowSubmitForm(true)}
+                className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 flex items-center gap-2 transition-colors"
+                title="Wizard-режим с расширенными настройками"
+              >
+                <Plus size={18} />
+                Wizard
               </button>
               <button
                 onClick={() => setShowClusterForm(true)}
@@ -343,6 +355,7 @@ export default function SeoPage() {
           <div className="mt-8">
             <ClusterVisualization
               clusters={clusters}
+              onViewDetails={(id) => setSelectedClusterId(id)}
               onExport={(id) => console.log('Export cluster:', id)}
               onDelete={(id) => console.log('Delete cluster:', id)}
             />
@@ -351,6 +364,13 @@ export default function SeoPage() {
       </div>
 
       {/* Modals */}
+      {showQuickForm && (
+        <QuickKeywordForm
+          onClose={() => setShowQuickForm(false)}
+          onSuccess={handleRefresh}
+        />
+      )}
+
       {showSubmitForm && (
         <KeywordSubmitForm
           onClose={() => setShowSubmitForm(false)}
@@ -369,6 +389,13 @@ export default function SeoPage() {
         <KeywordResultsModal
           keywordId={selectedKeywordId}
           onClose={handleCloseResults}
+        />
+      )}
+
+      {selectedClusterId && (
+        <ClusterDetailsModal
+          clusterId={selectedClusterId}
+          onClose={() => setSelectedClusterId(null)}
         />
       )}
     </div>
