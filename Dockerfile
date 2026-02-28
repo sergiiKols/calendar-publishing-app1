@@ -14,10 +14,12 @@ RUN npm ci
 FROM base AS builder
 WORKDIR /app
 
-# Cache buster - change this to force rebuild
-ARG CACHEBUST=2
-
 COPY --from=deps /app/node_modules ./node_modules
+
+# Cache buster - change this to force rebuild
+ARG CACHEBUST=2026-02-28-FINAL
+RUN echo "Cache bust: $CACHEBUST"
+
 COPY . .
 
 # Set environment variable to production
