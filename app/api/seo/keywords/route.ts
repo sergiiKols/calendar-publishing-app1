@@ -433,11 +433,14 @@ async function processKeywordsData(
   
   const data = response.tasks[0]?.result?.[0];
   if (data) {
+    const hasData = data.search_volume !== null || data.cpc !== null || data.competition_index !== null;
+    
     console.log(`[SEO] Keywords Data API success! Data:`, { 
       search_volume: data.search_volume, 
       cpc: data.cpc,
       competition_index: data.competition_index,
-      full_data: JSON.stringify(data, null, 2)
+      hasData: hasData,
+      note: hasData ? 'Data available' : 'No data - keyword may be too specific or have low search volume'
     });
     
     // Convert Google Ads competition index to 0-1 scale
@@ -455,6 +458,15 @@ async function processKeywordsData(
         ${data.search_volume || null}, ${data.cpc || null}, ${competitionValue}
       )
     `;
+    
+    // If no data available, log a helpful message
+    if (!hasData) {
+      console.log(`[SEO] ⚠️  No metrics available for "${keyword}". This keyword may be:
+        - Too specific (try shorter variations)
+        - Very low search volume (< 10 searches/month)
+        - Not tracked by Google Ads in this region
+        Suggestion: Try breaking it into shorter keywords like "sri lanka apartment" or "digital nomad"`);
+    }
   } else {
     console.log(`[SEO] Keywords Data API returned no data for keyword: ${keyword}`);
   }
