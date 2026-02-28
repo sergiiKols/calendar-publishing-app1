@@ -76,7 +76,7 @@ export class DataForSeoClient {
       ];
 
       const response = await this.client.post<KeywordsDataResponse>(
-        DATAFORSEO_ENDPOINTS.SEARCH_VOLUME,
+        DATAFORSEO_ENDPOINTS.KEYWORDS_FOR_KEYWORDS,
         requestBody
       );
 

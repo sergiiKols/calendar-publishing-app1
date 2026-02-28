@@ -84,7 +84,7 @@ export const DATAFORSEO_ENDPOINTS = {
   
   // ===== Keywords Data API (метрики) =====
   // Using Google Ads endpoints (these are available in pay-as-you-go plan)
-  KEYWORDS_FOR_KEYWORDS: '/keywords_data/google_ads/search_volume/live',
+  KEYWORDS_FOR_KEYWORDS: '/keywords_data/google_ads/keywords_for_keywords/live',
   SEARCH_VOLUME: '/keywords_data/google_ads/search_volume/live',
   KEYWORD_SUGGESTIONS: '/keywords_data/google_ads/keywords_for_keywords/live',
   
