@@ -105,6 +105,22 @@ BEGIN
     END IF;
 END $$;
 
+-- Делаем smi_project_id nullable, если он NOT NULL
+DO $$ 
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'projects' 
+        AND column_name = 'smi_project_id' 
+        AND is_nullable = 'NO'
+    ) THEN
+        ALTER TABLE projects ALTER COLUMN smi_project_id DROP NOT NULL;
+        RAISE NOTICE 'Made smi_project_id nullable';
+    ELSE
+        RAISE NOTICE 'smi_project_id is already nullable or does not exist';
+    END IF;
+END $$;
+
 -- Проверяем итоговую структуру таблицы
 SELECT 
     column_name, 
