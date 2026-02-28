@@ -304,7 +304,16 @@ async function processKeywordsInBackground(
           await processSerpAnalysis(client, keyword, language, locationCode, keywordId);
           completedTasks++;
         } catch (error: any) {
-          console.error(`[SEO] SERP Analysis failed for ${keyword}:`, error?.response?.data || error?.message);
+          const errorStatus = error?.response?.status;
+          const errorMessage = error?.response?.data?.status_message || error?.message || 'SERP API not available';
+          
+          // 404 означает, что endpoint не доступен в текущем плане
+          if (errorStatus === 404) {
+            console.log(`[SEO] SERP Analysis not available in current plan for ${keyword} (404)`);
+          } else {
+            console.error(`[SEO] SERP Analysis failed for ${keyword}:`, error?.response?.data || error?.message);
+          }
+          
           // Помечаем задачу как failed, но продолжаем
           const taskResult = await sql`
             SELECT id FROM seo_tasks 
@@ -316,7 +325,7 @@ async function processKeywordsInBackground(
               UPDATE seo_tasks 
               SET status = 'failed', 
                   completed_at = NOW(),
-                  error_message = ${error?.response?.data?.status_message || error?.message || 'SERP API not available'}
+                  error_message = ${errorStatus === 404 ? 'API not available in current plan' : errorMessage}
               WHERE id = ${taskResult.rows[0].id}
             `;
           }
@@ -328,7 +337,16 @@ async function processKeywordsInBackground(
           await processKeywordSuggestions(client, keyword, language, locationCode, keywordId);
           completedTasks++;
         } catch (error: any) {
-          console.error(`[SEO] Keyword Suggestions failed for ${keyword}:`, error?.response?.data || error?.message);
+          const errorStatus = error?.response?.status;
+          const errorMessage = error?.response?.data?.status_message || error?.message || 'Keyword Suggestions API not available';
+          
+          // 404 означает, что endpoint не доступен в текущем плане
+          if (errorStatus === 404) {
+            console.log(`[SEO] Keyword Suggestions not available in current plan for ${keyword} (404)`);
+          } else {
+            console.error(`[SEO] Keyword Suggestions failed for ${keyword}:`, error?.response?.data || error?.message);
+          }
+          
           // Помечаем задачу как failed, но продолжаем
           const taskResult = await sql`
             SELECT id FROM seo_tasks 
@@ -340,7 +358,7 @@ async function processKeywordsInBackground(
               UPDATE seo_tasks 
               SET status = 'failed', 
                   completed_at = NOW(),
-                  error_message = ${error?.response?.data?.status_message || error?.message || 'Keyword Suggestions API not available'}
+                  error_message = ${errorStatus === 404 ? 'API not available in current plan' : errorMessage}
               WHERE id = ${taskResult.rows[0].id}
             `;
           }
