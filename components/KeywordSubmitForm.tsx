@@ -72,12 +72,14 @@ export default function KeywordSubmitForm({ onClose, onSuccess }: KeywordSubmitF
       const response = await fetch('/api/projects');
       const data = await response.json();
       console.log('🔍 KeywordSubmitForm - fetchProjects response:', data);
-      if (data.success) {
-        console.log('✅ KeywordSubmitForm - setting projects:', data.projects);
-        setProjects(data.projects);
-        if (data.projects.length > 0 && !formData.projectId) {
-          setFormData(prev => ({ ...prev, projectId: data.projects[0].id.toString() }));
-        }
+      
+      // Handle both formats: { success: true, projects: [] } and { projects: [] }
+      const projects = data.projects || [];
+      console.log('✅ KeywordSubmitForm - setting projects:', projects);
+      setProjects(projects);
+      
+      if (projects.length > 0 && !formData.projectId) {
+        setFormData(prev => ({ ...prev, projectId: projects[0].id.toString() }));
       }
     } catch (error) {
       console.error('Failed to fetch projects:', error);
