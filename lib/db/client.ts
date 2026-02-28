@@ -204,33 +204,53 @@ export async function createProject(data: {
           } catch (error3: any) {
             // Handle NOT NULL constraint on smi_project_id
             if (error3.code === '23502' && error3.column === 'smi_project_id') {
-              console.log('⚠️ smi_project_id is required, providing default value 0...');
+              console.log('⚠️ smi_project_id is required, using NULL or unique value...');
               try {
+                // Try with NULL first (if column allows it)
                 const result = await sql`
                   INSERT INTO projects (user_id, name, smi_project_id)
                   VALUES (
                     ${data.user_id},
                     ${data.name},
-                    0
+                    NULL
                   )
                   RETURNING *
                 `;
                 return result.rows[0];
               } catch (error4: any) {
-                // Handle NOT NULL constraint on api_token
-                if (error4.code === '23502' && error4.column === 'api_token') {
-                  console.log('⚠️ api_token is required, providing empty string...');
-                  const result = await sql`
-                    INSERT INTO projects (user_id, name, smi_project_id, api_token)
-                    VALUES (
-                      ${data.user_id},
-                      ${data.name},
-                      0,
-                      ''
-                    )
-                    RETURNING *
-                  `;
-                  return result.rows[0];
+                // If NULL not allowed, generate unique timestamp-based ID
+                if (error4.code === '23502') {
+                  console.log('⚠️ smi_project_id NULL not allowed, generating unique ID...');
+                  const uniqueId = Date.now();
+                  try {
+                    const result = await sql`
+                      INSERT INTO projects (user_id, name, smi_project_id)
+                      VALUES (
+                        ${data.user_id},
+                        ${data.name},
+                        ${uniqueId}
+                      )
+                      RETURNING *
+                    `;
+                    return result.rows[0];
+                  } catch (error5: any) {
+                    // Handle api_token requirement
+                    if (error5.code === '23502' && error5.column === 'api_token') {
+                      console.log('⚠️ api_token is required, providing empty string...');
+                      const result = await sql`
+                        INSERT INTO projects (user_id, name, smi_project_id, api_token)
+                        VALUES (
+                          ${data.user_id},
+                          ${data.name},
+                          ${uniqueId},
+                          ''
+                        )
+                        RETURNING *
+                      `;
+                      return result.rows[0];
+                    }
+                    throw error5;
+                  }
                 }
                 throw error4;
               }
