@@ -121,6 +121,22 @@ BEGIN
     END IF;
 END $$;
 
+-- Делаем api_token nullable, если он NOT NULL
+DO $$ 
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'projects' 
+        AND column_name = 'api_token' 
+        AND is_nullable = 'NO'
+    ) THEN
+        ALTER TABLE projects ALTER COLUMN api_token DROP NOT NULL;
+        RAISE NOTICE 'Made api_token nullable';
+    ELSE
+        RAISE NOTICE 'api_token is already nullable or does not exist';
+    END IF;
+END $$;
+
 -- Проверяем итоговую структуру таблицы
 SELECT 
     column_name, 

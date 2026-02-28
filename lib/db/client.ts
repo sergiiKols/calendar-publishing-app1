@@ -205,16 +205,35 @@ export async function createProject(data: {
             // Handle NOT NULL constraint on smi_project_id
             if (error3.code === '23502' && error3.column === 'smi_project_id') {
               console.log('⚠️ smi_project_id is required, providing default value 0...');
-              const result = await sql`
-                INSERT INTO projects (user_id, name, smi_project_id)
-                VALUES (
-                  ${data.user_id},
-                  ${data.name},
-                  0
-                )
-                RETURNING *
-              `;
-              return result.rows[0];
+              try {
+                const result = await sql`
+                  INSERT INTO projects (user_id, name, smi_project_id)
+                  VALUES (
+                    ${data.user_id},
+                    ${data.name},
+                    0
+                  )
+                  RETURNING *
+                `;
+                return result.rows[0];
+              } catch (error4: any) {
+                // Handle NOT NULL constraint on api_token
+                if (error4.code === '23502' && error4.column === 'api_token') {
+                  console.log('⚠️ api_token is required, providing empty string...');
+                  const result = await sql`
+                    INSERT INTO projects (user_id, name, smi_project_id, api_token)
+                    VALUES (
+                      ${data.user_id},
+                      ${data.name},
+                      0,
+                      ''
+                    )
+                    RETURNING *
+                  `;
+                  return result.rows[0];
+                }
+                throw error4;
+              }
             }
             throw error3;
           }
