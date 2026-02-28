@@ -191,15 +191,33 @@ export async function createProject(data: {
         // If still failing, try with only required fields
         if (error2.code === '42703') {
           console.log('⚠️ Color column missing, trying with only user_id and name...');
-          const result = await sql`
-            INSERT INTO projects (user_id, name)
-            VALUES (
-              ${data.user_id},
-              ${data.name}
-            )
-            RETURNING *
-          `;
-          return result.rows[0];
+          try {
+            const result = await sql`
+              INSERT INTO projects (user_id, name)
+              VALUES (
+                ${data.user_id},
+                ${data.name}
+              )
+              RETURNING *
+            `;
+            return result.rows[0];
+          } catch (error3: any) {
+            // Handle NOT NULL constraint on smi_project_id
+            if (error3.code === '23502' && error3.column === 'smi_project_id') {
+              console.log('⚠️ smi_project_id is required, providing default value 0...');
+              const result = await sql`
+                INSERT INTO projects (user_id, name, smi_project_id)
+                VALUES (
+                  ${data.user_id},
+                  ${data.name},
+                  0
+                )
+                RETURNING *
+              `;
+              return result.rows[0];
+            }
+            throw error3;
+          }
         }
         throw error2;
       }
