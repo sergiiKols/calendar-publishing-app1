@@ -50,6 +50,11 @@ services:
       CALENDAR_API_KEY: ${CALENDAR_API_KEY:-your-api-key-here}
       CRON_SECRET: ${CRON_SECRET:-your-cron-secret-here}
       
+      # DataForSEO API
+      DATAFORSEO_LOGIN: ${DATAFORSEO_LOGIN:-}
+      DATAFORSEO_PASSWORD: ${DATAFORSEO_PASSWORD:-}
+      DATAFORSEO_API_URL: ${DATAFORSEO_API_URL:-https://api.dataforseo.com/v3}
+      
       # Node environment
       NODE_ENV: production
     ports:

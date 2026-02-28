@@ -43,6 +43,13 @@ ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=AdminPass123!
 ```
 
+### 🔍 DataForSEO API (SEO анализ)
+```
+DATAFORSEO_LOGIN=alex@yachtservice.vip
+DATAFORSEO_PASSWORD=f293de466eb3eda0
+DATAFORSEO_API_URL=https://api.dataforseo.com/v3
+```
+
 ---
 
 ## 🚀 После добавления переменных:
