@@ -158,7 +158,7 @@ export async function createProject(data: {
   description?: string | null;
   color?: string;
 }) {
-  // If description column doesn't exist, create without it
+  // Try with all columns first
   try {
     const result = await sql`
       INSERT INTO projects (user_id, name, description, color)
@@ -172,18 +172,37 @@ export async function createProject(data: {
     `;
     return result.rows[0];
   } catch (error: any) {
-    // If error is "column description does not exist", try without it
-    if (error.code === '42703' && error.message.includes('description')) {
-      const result = await sql`
-        INSERT INTO projects (user_id, name, color)
-        VALUES (
-          ${data.user_id},
-          ${data.name},
-          ${data.color || '#3B82F6'}
-        )
-        RETURNING *
-      `;
-      return result.rows[0];
+    // If column doesn't exist (code 42703), try with minimal columns
+    if (error.code === '42703') {
+      console.log('⚠️ Some columns missing, trying with minimal fields...');
+      try {
+        // Try without description
+        const result = await sql`
+          INSERT INTO projects (user_id, name, color)
+          VALUES (
+            ${data.user_id},
+            ${data.name},
+            ${data.color || '#3B82F6'}
+          )
+          RETURNING *
+        `;
+        return result.rows[0];
+      } catch (error2: any) {
+        // If still failing, try with only required fields
+        if (error2.code === '42703') {
+          console.log('⚠️ Color column missing, trying with only user_id and name...');
+          const result = await sql`
+            INSERT INTO projects (user_id, name)
+            VALUES (
+              ${data.user_id},
+              ${data.name}
+            )
+            RETURNING *
+          `;
+          return result.rows[0];
+        }
+        throw error2;
+      }
     }
     throw error;
   }
