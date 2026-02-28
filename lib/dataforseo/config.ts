@@ -83,9 +83,10 @@ export const DATAFORSEO_ENDPOINTS = {
   LABS_KEYWORDS_FOR_CATEGORIES: '/dataforseo_labs/google/categories_for_domain/live',
   
   // ===== Keywords Data API (метрики) =====
-  KEYWORDS_FOR_KEYWORDS: '/keywords_data/google/keywords_for_keywords/live',
-  SEARCH_VOLUME: '/keywords_data/google/search_volume/live',
-  KEYWORD_SUGGESTIONS: '/keywords_data/google/keyword_suggestions/live',
+  // Using Google Ads endpoints (these are available in pay-as-you-go plan)
+  KEYWORDS_FOR_KEYWORDS: '/keywords_data/google_ads/search_volume/live',
+  SEARCH_VOLUME: '/keywords_data/google_ads/search_volume/live',
+  KEYWORD_SUGGESTIONS: '/keywords_data/google_ads/keywords_for_keywords/live',
   
   // ===== SERP API (анализ интента) =====
   SERP_ORGANIC: '/serp/google/organic/live',

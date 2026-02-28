@@ -64,20 +64,19 @@ export class DataForSeoClient {
     location_code: number;
   }): Promise<KeywordsDataResponse> {
     try {
+      // Google Ads API uses simpler format (just array of keywords)
       const requestBody = [
         {
           keywords: params.keywords,
-          language_code: params.language_code,
           location_code: params.location_code,
-          include_serp_info: true,
-          include_seed_keyword: true,
-          date_from: this.getDateMonthsAgo(12), // данные за последний год
-          date_to: this.getCurrentDate(),
+          language_code: params.language_code,
+          search_partners: false,
+          sort_by: 'relevance',
         },
       ];
 
       const response = await this.client.post<KeywordsDataResponse>(
-        DATAFORSEO_ENDPOINTS.KEYWORDS_FOR_KEYWORDS,
+        DATAFORSEO_ENDPOINTS.SEARCH_VOLUME,
         requestBody
       );
 
