@@ -393,8 +393,10 @@ async function processKeywordsData(
   // Try Labs API first (usually available in free plans)
   try {
     const labsClient = await import('@/lib/dataforseo/labs-client');
-    const response = await labsClient.getKeywordsForKeywords({
-      seed_keywords: [keyword],
+    console.log(`[SEO] Trying Labs API for keyword: ${keyword}`);
+    
+    const response = await labsClient.getLabsKeywordsForKeywords({
+      seeds: [keyword],
       language_code: language,
       location_code: locationCode,
       limit: 1, // We only need metrics for the original keyword
@@ -402,6 +404,12 @@ async function processKeywordsData(
 
     const data = response.tasks?.[0]?.result?.[0]?.items?.[0];
     if (data) {
+      console.log(`[SEO] Labs API success! Data:`, { 
+        search_volume: data.keyword_info?.search_volume, 
+        cpc: data.keyword_info?.cpc,
+        competition: data.keyword_info?.competition 
+      });
+      
       await sql`
         INSERT INTO seo_results (
           keyword_id, task_id, endpoint_type, result_data,
@@ -414,6 +422,8 @@ async function processKeywordsData(
           ${data.keyword_info?.competition || null}
         )
       `;
+    } else {
+      console.log(`[SEO] Labs API returned no data for keyword: ${keyword}`);
     }
 
     await sql`
@@ -421,7 +431,8 @@ async function processKeywordsData(
       WHERE id = ${taskId}
     `;
   } catch (labsError: any) {
-    console.log('[SEO] Labs API failed, trying Keywords Data API...', labsError?.response?.data || labsError?.message);
+    console.error('[SEO] Labs API failed:', labsError?.response?.data || labsError?.message);
+    console.log('[SEO] Falling back to Keywords Data API...');
     
     // Fallback to Keywords Data API if Labs fails
     const response = await client.getKeywordsData({
