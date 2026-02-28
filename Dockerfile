@@ -17,9 +17,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 
 # Cache buster - change this to force rebuild
-ARG CACHEBUST=2026-02-28-FINAL
+ARG CACHEBUST=2026-02-28-SEO-V2
 RUN echo "Cache bust: $CACHEBUST"
-
 COPY . .
 
 # Set environment variable to production
