@@ -239,12 +239,13 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '1000'); // Увеличено с 50 до 1000
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    // Строим запрос с метриками из seo_results
+    // Строим запрос с метриками из seo_results и category_id
     let query = `
       SELECT 
         k.*,
         p.name as project_name,
         sk.keyword as source_keyword_name,
+        c.name as category_name,
         r.search_volume,
         r.cpc,
         r.competition,
@@ -254,6 +255,7 @@ export async function GET(request: NextRequest) {
       FROM seo_keywords k
       LEFT JOIN projects p ON k.project_id = p.id
       LEFT JOIN seo_keywords sk ON k.source_keyword_id = sk.id
+      LEFT JOIN categories c ON k.category_id = c.id
       LEFT JOIN seo_tasks t ON k.id = t.keyword_id
       LEFT JOIN seo_results r ON (k.id = r.keyword_id AND r.endpoint_type = 'keywords_data')
       WHERE k.user_id = ${userId}
@@ -268,7 +270,7 @@ export async function GET(request: NextRequest) {
     }
 
     query += `
-      GROUP BY k.id, p.name, sk.keyword, r.search_volume, r.cpc, r.competition, r.result_data
+      GROUP BY k.id, p.name, sk.keyword, c.name, r.search_volume, r.cpc, r.competition, r.result_data
       ORDER BY k.created_at DESC
       LIMIT ${limit}
       OFFSET ${offset}
