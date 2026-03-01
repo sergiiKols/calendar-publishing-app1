@@ -270,7 +270,7 @@ export async function GET(request: NextRequest) {
     }
 
     query += `
-      GROUP BY k.id, p.name, sk.keyword, c.name
+      GROUP BY k.id, p.id, p.name, sk.id, sk.keyword, c.id, c.name
       ORDER BY k.created_at DESC
       LIMIT ${limit}
       OFFSET ${offset}

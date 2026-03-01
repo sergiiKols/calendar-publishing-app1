@@ -40,6 +40,68 @@ export default function KeywordsTable({ keywords, onDelete, onRefresh }: Keyword
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [isDeletingBulk, setIsDeletingBulk] = useState(false);
 
+  const toggleSelectAll = () => {
+    if (selectedIds.size === keywords.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(keywords.map(k => k.id)));
+    }
+  };
+
+  const toggleSelect = (id: number) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) {
+      toast.error('Выберите ключевые слова для удаления');
+      return;
+    }
+
+    if (!confirm(`Удалить ${selectedIds.size} ключевых слов?`)) {
+      return;
+    }
+
+    setIsDeletingBulk(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const id of selectedIds) {
+      try {
+        const response = await fetch(`/api/seo/delete/${id}`, {
+          method: 'DELETE',
+        });
+        const data = await response.json();
+        if (data.success) {
+          successCount++;
+        } else {
+          errorCount++;
+        }
+      } catch (error) {
+        errorCount++;
+      }
+    }
+
+    setIsDeletingBulk(false);
+    setSelectedIds(new Set());
+
+    if (successCount > 0) {
+      toast.success(`Удалено ${successCount} ключевых слов`);
+      if (onRefresh) {
+        onRefresh();
+      }
+    }
+    if (errorCount > 0) {
+      toast.error(`Ошибка при удалении ${errorCount} слов`);
+    }
+  };
+
   const handleDelete = async (keywordId: number) => {
     if (!confirm('Вы уверены, что хотите удалить это ключевое слово и все связанные данные?')) {
       return;
@@ -173,13 +235,47 @@ export default function KeywordsTable({ keywords, onDelete, onRefresh }: Keyword
   };
 
   return (
-    <div className="overflow-x-auto bg-white rounded-lg shadow">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Ключевое слово
-            </th>
+    <div className="space-y-4">
+      {/* Панель массовых действий */}
+      {selectedIds.size > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-blue-900">
+              Выбрано: {selectedIds.size} из {keywords.length}
+            </span>
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              Снять выделение
+            </button>
+          </div>
+          <button
+            onClick={handleBulkDelete}
+            disabled={isDeletingBulk}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+          >
+            <Trash size={16} />
+            {isDeletingBulk ? 'Удаление...' : `Удалить выбранные (${selectedIds.size})`}
+          </button>
+        </div>
+      )}
+
+      <div className="overflow-x-auto bg-white rounded-lg shadow">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size === keywords.length && keywords.length > 0}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Ключевое слово
+              </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Частота
             </th>
@@ -208,8 +304,16 @@ export default function KeywordsTable({ keywords, onDelete, onRefresh }: Keyword
                   isSource 
                     ? 'bg-blue-50 hover:bg-blue-100' 
                     : 'hover:bg-gray-50'
-                }`}
+                } ${selectedIds.has(keyword.id) ? 'ring-2 ring-blue-500' : ''}`}
               >
+                <td className="px-6 py-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(keyword.id)}
+                    onChange={() => toggleSelect(keyword.id)}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
                     {isSource && (
@@ -273,8 +377,9 @@ export default function KeywordsTable({ keywords, onDelete, onRefresh }: Keyword
               </tr>
             );
           })}
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
