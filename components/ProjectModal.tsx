@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 
+// Force rebuild: 2026-03-01 - Added region selection and color picker
+
 interface ProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
