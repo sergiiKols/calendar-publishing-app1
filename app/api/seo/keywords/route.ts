@@ -236,7 +236,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('project_id');
     const status = searchParams.get('status');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const limit = parseInt(searchParams.get('limit') || '1000'); // Увеличено с 50 до 1000
     const offset = parseInt(searchParams.get('offset') || '0');
 
     // Строим запрос с метриками из seo_results
@@ -609,7 +609,7 @@ async function processKeywordSuggestions(
     keyword,
     language_code: language,
     location_code: locationCode,
-    limit: 50,
+    limit: 700, // Увеличено с 50 до 700 для получения большего количества идей
   });
 
   console.log(`[SEO] Keyword Suggestions API Response:`, {
