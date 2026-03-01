@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Force new build ID to invalidate ALL caches
+  generateBuildId: async () => {
+    return 'build-' + Date.now();
+  },
   reactStrictMode: true,
   // Enable standalone output for Docker
   output: 'standalone',
