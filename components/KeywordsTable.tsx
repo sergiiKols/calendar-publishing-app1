@@ -540,19 +540,9 @@ export default function KeywordsTable({ keywords, onDelete, onRefresh }: Keyword
                     className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   />
                 </td>
-                <td className={`py-4 ${isSource ? 'px-6' : 'px-12'}`}>
-                  <div className="flex items-center gap-2">
-                    {isSource && (
-                      <Target size={16} className="text-blue-600 flex-shrink-0" title="Ключевое слово-источник" />
-                    )}
-                    {!isSource && groupBySource && (
-                      <span className="text-gray-400 text-xs mr-2">└─</span>
-                    )}
-                    <div className="flex-1">
-                      <div className={`text-sm ${isSource ? 'font-bold text-gray-900' : 'font-medium text-gray-700'}`}>
-                        {keyword.keyword}
-                      </div>
-                    </div>
+                <td className="px-6 py-4">
+                  <div className="text-sm font-medium text-gray-700">
+                    {keyword.keyword}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
