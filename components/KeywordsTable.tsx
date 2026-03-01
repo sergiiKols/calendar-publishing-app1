@@ -36,10 +36,16 @@ interface KeywordsTableProps {
   onRefresh?: () => void;
 }
 
+type SourceSortOption = 'count' | 'date' | 'alpha';
+type RelatedSortOption = 'volume' | 'cpc' | 'competition' | 'intent' | 'alpha';
+
 export default function KeywordsTable({ keywords, onDelete, onRefresh }: KeywordsTableProps) {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [isDeletingBulk, setIsDeletingBulk] = useState(false);
+  const [groupBySource, setGroupBySource] = useState(true);
+  const [sourceSortBy, setSourceSortBy] = useState<SourceSortOption>('count');
+  const [relatedSortBy, setRelatedSortBy] = useState<RelatedSortOption>('volume');
 
   const toggleSelectAll = () => {
     if (selectedIds.size === keywords.length) {
@@ -218,6 +224,80 @@ export default function KeywordsTable({ keywords, onDelete, onRefresh }: Keyword
     return `${Math.round(numValue * 100)}%`;
   };
 
+  // Группировка и сортировка
+  const organizeKeywords = () => {
+    if (!groupBySource) {
+      // Без группировки - просто сортируем по дате
+      return keywords;
+    }
+
+    // Разделяем на источники и related
+    const sources = keywords.filter(k => !k.source_keyword_id);
+    const related = keywords.filter(k => k.source_keyword_id);
+
+    // Сортируем источники
+    const sortedSources = [...sources].sort((a, b) => {
+      switch (sourceSortBy) {
+        case 'count':
+          return (b.related_count || 0) - (a.related_count || 0);
+        case 'date':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'alpha':
+          return a.keyword.localeCompare(b.keyword);
+        default:
+          return 0;
+      }
+    });
+
+    // Функция для сортировки related keywords
+    const sortRelated = (relatedList: Keyword[]) => {
+      return [...relatedList].sort((a, b) => {
+        switch (relatedSortBy) {
+          case 'volume':
+            const volA = typeof a.search_volume === 'string' ? parseFloat(a.search_volume) : (a.search_volume || 0);
+            const volB = typeof b.search_volume === 'string' ? parseFloat(b.search_volume) : (b.search_volume || 0);
+            return volB - volA;
+          case 'cpc':
+            const cpcA = typeof a.cpc === 'string' ? parseFloat(a.cpc) : (a.cpc || 0);
+            const cpcB = typeof b.cpc === 'string' ? parseFloat(b.cpc) : (b.cpc || 0);
+            return cpcB - cpcA;
+          case 'competition':
+            const compA = typeof a.competition === 'string' ? parseFloat(a.competition) : (a.competition || 0);
+            const compB = typeof b.competition === 'string' ? parseFloat(b.competition) : (b.competition || 0);
+            return compB - compA;
+          case 'intent':
+            const intentOrder = { 'Transactional': 0, 'Commercial': 1, 'Navigational': 2, 'Informational': 3 };
+            const intentA = intentOrder[a.search_intent as keyof typeof intentOrder] ?? 9;
+            const intentB = intentOrder[b.search_intent as keyof typeof intentOrder] ?? 9;
+            return intentA - intentB;
+          case 'alpha':
+            return a.keyword.localeCompare(b.keyword);
+          default:
+            return 0;
+        }
+      });
+    };
+
+    // Собираем в группы: источник + его related keywords
+    const grouped: Keyword[] = [];
+    sortedSources.forEach(source => {
+      grouped.push(source);
+      const sourceRelated = related.filter(r => r.source_keyword_id === source.id);
+      const sortedRelated = sortRelated(sourceRelated);
+      grouped.push(...sortedRelated);
+    });
+
+    // Добавляем related без источника (если есть)
+    const orphanRelated = related.filter(r => !sources.find(s => s.id === r.source_keyword_id));
+    if (orphanRelated.length > 0) {
+      grouped.push(...sortRelated(orphanRelated));
+    }
+
+    return grouped;
+  };
+
+  const organizedKeywords = organizeKeywords();
+
   const getIntentBadge = (intent?: string) => {
     if (!intent) return null;
     
@@ -320,13 +400,26 @@ export default function KeywordsTable({ keywords, onDelete, onRefresh }: Keyword
                     {isSource && (
                       <Target size={16} className="text-blue-600 flex-shrink-0" title="Ключевое слово-источник" />
                     )}
-                    <div>
+                    <div className="flex-1">
                       <div className={`text-sm ${isSource ? 'font-bold text-gray-900' : 'font-medium text-gray-700'}`}>
                         {keyword.keyword}
                       </div>
                       {keyword.source_keyword_name && (
                         <div className="text-xs text-gray-500 mt-0.5">
                           от: {keyword.source_keyword_name}
+                        </div>
+                      )}
+                      {isSource && (
+                        <div className={`text-xs mt-1 font-medium ${
+                          (keyword.related_count || 0) === 0 
+                            ? 'text-red-600' 
+                            : 'text-green-600'
+                        }`}>
+                          {keyword.related_count === 0 ? (
+                            <>⚠️ 0 related keywords</>
+                          ) : (
+                            <>→ {keyword.related_count} related keywords</>
+                          )}
                         </div>
                       )}
                     </div>
