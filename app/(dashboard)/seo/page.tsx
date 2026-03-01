@@ -12,12 +12,16 @@ import { useRouter } from 'next/navigation';
 import { Toaster } from 'react-hot-toast';
 import ModuleNavigation from '@/components/ModuleNavigation';
 import ProjectsGrid from '@/components/ProjectsGrid';
-import ProjectWorkspace from '@/components/ProjectWorkspace';interface Project {
+import ProjectWorkspace from '@/components/ProjectWorkspace';
+
+interface Project {
   id: number;
   name: string;
   description?: string;
   keywords_count?: number;
   created_at?: string;
+  search_location_code?: number;
+  color?: string;
 }
 
 export default function SeoPage() {
