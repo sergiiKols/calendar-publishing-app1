@@ -453,7 +453,7 @@ export async function getCalendarEvents(month?: number, year?: number, projectId
   if (month && year && projectId) {
     const result = await sql`
       SELECT ce.*, ia.title, ia.content, ia.images, ia.source_project, ia.created_at as article_created_at,
-             p.name as project_name, p.color as project_color
+             p.name as project_name, COALESCE(p.color, '#3B82F6') as project_color
       FROM calendar_events ce
       JOIN inbox_articles ia ON ce.article_id = ia.id
       LEFT JOIN projects p ON ce.project_id = p.id
@@ -468,7 +468,7 @@ export async function getCalendarEvents(month?: number, year?: number, projectId
   if (month && year) {
     const result = await sql`
       SELECT ce.*, ia.title, ia.content, ia.images, ia.source_project, ia.created_at as article_created_at,
-             p.name as project_name, p.color as project_color
+             p.name as project_name, COALESCE(p.color, '#3B82F6') as project_color
       FROM calendar_events ce
       JOIN inbox_articles ia ON ce.article_id = ia.id
       LEFT JOIN projects p ON ce.project_id = p.id
@@ -482,7 +482,7 @@ export async function getCalendarEvents(month?: number, year?: number, projectId
   if (projectId) {
     const result = await sql`
       SELECT ce.*, ia.title, ia.content, ia.images, ia.source_project, ia.created_at as article_created_at,
-             p.name as project_name, p.color as project_color
+             p.name as project_name, COALESCE(p.color, '#3B82F6') as project_color
       FROM calendar_events ce
       JOIN inbox_articles ia ON ce.article_id = ia.id
       LEFT JOIN projects p ON ce.project_id = p.id
@@ -494,7 +494,7 @@ export async function getCalendarEvents(month?: number, year?: number, projectId
   
   const result = await sql`
     SELECT ce.*, ia.title, ia.content, ia.images, ia.source_project, ia.created_at as article_created_at,
-           p.name as project_name, p.color as project_color
+           p.name as project_name, COALESCE(p.color, '#3B82F6') as project_color
     FROM calendar_events ce
     JOIN inbox_articles ia ON ce.article_id = ia.id
     LEFT JOIN projects p ON ce.project_id = p.id

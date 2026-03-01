@@ -28,14 +28,23 @@ export async function GET() {
         ADD COLUMN IF NOT EXISTS color VARCHAR(7) DEFAULT '#3B82F6'
       `);
       
-      // 3. Обновить существующие проекты
-      console.log('🔄 Updating existing projects...');
+      // 3. Обновить существующие проекты (установить цвет по умолчанию)
+      console.log('🔄 Updating existing projects with default color...');
       const updateResult = await client.query(`
         UPDATE projects 
         SET color = '#3B82F6' 
-        WHERE color IS NULL
+        WHERE color IS NULL OR color = ''
       `);
       console.log(`✅ Updated ${updateResult.rowCount} projects with default color`);
+      
+      // 4. Проверить и обновить search_location_code если нужно
+      console.log('🔄 Updating search_location_code for old projects...');
+      const updateLocationResult = await client.query(`
+        UPDATE projects 
+        SET search_location_code = 2840 
+        WHERE search_location_code IS NULL
+      `);
+      console.log(`✅ Updated ${updateLocationResult.rowCount} projects with default location`);
       
       // 4. Проверка
       console.log('🔍 Verifying columns...');
