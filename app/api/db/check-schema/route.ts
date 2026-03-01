@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
-import pool from '@/lib/db/client';
+import { Pool } from 'pg';
 
 export async function GET() {
   try {
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL,
+    });
+    
     const client = await pool.connect();
     
     try {
@@ -59,6 +63,7 @@ export async function GET() {
       
     } finally {
       client.release();
+      await pool.end();
     }
     
   } catch (error: any) {

@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
-import pool from '@/lib/db/client';
+import { Pool } from 'pg';
 
 export async function GET() {
   try {
     console.log('🔄 Starting migration: add description and color to projects...');
+    
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL,
+    });
     
     const client = await pool.connect();
     
@@ -61,6 +65,7 @@ export async function GET() {
       throw error;
     } finally {
       client.release();
+      await pool.end();
     }
     
   } catch (error: any) {
