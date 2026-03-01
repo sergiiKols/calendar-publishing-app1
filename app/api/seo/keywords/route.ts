@@ -42,11 +42,12 @@ export async function POST(request: NextRequest) {
 
     // Парсим запрос
     const body: SubmitKeywordsRequest = await request.json();
-    const { keywords, language, project_id, category_id } = body;
+    const { keywords, project_id, category_id } = body;
     
-    // Получаем регион из проекта вместо передачи в запросе
+    // Получаем регион и язык из проекта
     let location_code: string;
     let location_name: string;
+    let language: string = 'en'; // Дефолтный язык
     
     if (project_id) {
       const projectResult = await sql`
@@ -61,16 +62,21 @@ export async function POST(request: NextRequest) {
       const projectLocationCode = projectResult.rows[0].search_location_code || 2840;
       location_code = String(projectLocationCode);
       
-      // Определяем название региона
-      const locationNames: { [key: number]: string } = {
-        2840: 'United States',
-        2144: 'Sri Lanka',
-        2826: 'United Kingdom',
-        2643: 'Russia',
-        2124: 'Canada',
-        2036: 'Australia',
+      // Определяем название региона и язык по региону
+      const locationConfig: { [key: number]: { name: string; language: string } } = {
+        2840: { name: 'United States', language: 'en' },
+        2144: { name: 'Sri Lanka', language: 'en' },
+        2826: { name: 'United Kingdom', language: 'en' },
+        2643: { name: 'Russia', language: 'ru' },
+        2124: { name: 'Canada', language: 'en' },
+        2036: { name: 'Australia', language: 'en' },
       };
-      location_name = locationNames[projectLocationCode] || 'United States';
+      
+      const config = locationConfig[projectLocationCode] || locationConfig[2840];
+      location_name = config.name;
+      language = config.language;
+      
+      console.log(`[SEO] Using settings from project ${project_id}: language=${language}, location=${location_code} (${location_name})`);
     } else {
       return NextResponse.json(
         { success: false, error: 'project_id is required' },
