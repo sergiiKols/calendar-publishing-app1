@@ -8,7 +8,6 @@
 import { useState, useEffect } from 'react';
 import { X, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getLocationOptions, getLanguageOptions } from '@/lib/dataforseo/config';
 
 interface QuickKeywordFormProps {
   onClose: () => void;
@@ -21,6 +20,7 @@ interface Project {
   id: number;
   name: string;
   description?: string;
+  search_location_code?: number;
 }
 
 export default function QuickKeywordForm({ 
@@ -31,19 +31,14 @@ export default function QuickKeywordForm({
 }: QuickKeywordFormProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
     projectId: preselectedProjectId?.toString() || '',
     categoryId: preselectedCategoryId?.toString() || '',
-    keywords: '',
-    language: 'ru',
-    location: '2643', // Russia
-    locationName: 'Russia'
+    keywords: ''
   });
-
-  const languageOptions = getLanguageOptions();
-  const locationOptions = getLocationOptions();
 
   useEffect(() => {
     fetchProjects();
@@ -52,10 +47,14 @@ export default function QuickKeywordForm({
   useEffect(() => {
     if (formData.projectId) {
       fetchCategories(parseInt(formData.projectId));
+      // Обновить выбранный проект
+      const project = projects.find(p => p.id.toString() === formData.projectId);
+      setSelectedProject(project || null);
     } else {
       setCategories([]);
+      setSelectedProject(null);
     }
-  }, [formData.projectId]);
+  }, [formData.projectId, projects]);
 
   const fetchProjects = async () => {
     try {
@@ -65,7 +64,12 @@ export default function QuickKeywordForm({
       setProjects(projectsList);
       
       if (!formData.projectId && projectsList.length > 0) {
-        setFormData(prev => ({ ...prev, projectId: projectsList[0].id.toString() }));
+        const firstProject = projectsList[0];
+        setFormData(prev => ({ ...prev, projectId: firstProject.id.toString() }));
+        setSelectedProject(firstProject);
+      } else if (formData.projectId) {
+        const project = projectsList.find((p: Project) => p.id.toString() === formData.projectId);
+        setSelectedProject(project || null);
       }
     } catch (error) {
       console.error('Failed to fetch projects:', error);
@@ -93,6 +97,11 @@ export default function QuickKeywordForm({
       return;
     }
 
+    if (!selectedProject) {
+      toast.error('Проект не найден');
+      return;
+    }
+
     const keywordList = formData.keywords.split('\n').filter(k => k.trim());
     if (keywordList.length === 0) {
       toast.error('Введите хотя бы одно ключевое слово');
@@ -107,14 +116,12 @@ export default function QuickKeywordForm({
     setIsSubmitting(true);
 
     try {
+      // Язык и регион теперь берутся из настроек проекта на сервере
       const response = await fetch('/api/seo/keywords', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           keywords: keywordList,
-          language: formData.language,
-          location_code: formData.location,
-          location_name: formData.locationName,
           project_id: parseInt(formData.projectId),
           category_id: formData.categoryId ? parseInt(formData.categoryId) : null
         })
@@ -135,15 +142,6 @@ export default function QuickKeywordForm({
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleLocationChange = (code: string) => {
-    const location = locationOptions.find(l => l.value === code);
-    setFormData({
-      ...formData,
-      location: code,
-      locationName: location?.label || code
-    });
   };
 
   return (
@@ -218,44 +216,14 @@ export default function QuickKeywordForm({
             </div>
           )}
 
-          {/* Language & Location */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Язык <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.language}
-                onChange={(e) => setFormData({ ...formData, language: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              >
-                {languageOptions.map((lang) => (
-                  <option key={lang.value} value={lang.value}>
-                    {lang.label}
-                  </option>
-                ))}
-              </select>
+          {/* Project info - язык и регион берутся из настроек проекта */}
+          {selectedProject && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-900">
+                💡 <strong>Язык и регион</strong> будут взяты из настроек проекта <strong>{selectedProject.name}</strong>
+              </p>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Регион <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.location}
-                onChange={(e) => handleLocationChange(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              >
-                {locationOptions.map((loc) => (
-                  <option key={loc.value} value={loc.value}>
-                    {loc.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+          )}
 
           {/* Keywords */}
           <div>
