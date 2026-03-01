@@ -18,9 +18,9 @@ interface Keyword {
   project_name?: string;
   source_keyword_id?: number;
   source_keyword_name?: string;
-  search_volume?: number;
-  cpc?: number;
-  competition?: number;
+  search_volume?: number | string;
+  cpc?: number | string;
+  competition?: number | string;
   search_intent?: string;
   tasks_count: number;
   completed_tasks: number;
@@ -130,19 +130,25 @@ export default function KeywordsTable({ keywords, onDelete, onRefresh }: Keyword
     );
   }
 
-  const formatNumber = (num?: number) => {
-    if (!num && num !== 0) return '—';
-    return new Intl.NumberFormat('ru-RU').format(num);
+  const formatNumber = (num?: number | string) => {
+    if (num === null || num === undefined) return '—';
+    const numValue = typeof num === 'string' ? parseFloat(num) : num;
+    if (isNaN(numValue)) return '—';
+    return new Intl.NumberFormat('ru-RU').format(numValue);
   };
 
-  const formatCurrency = (amount?: number) => {
-    if (!amount && amount !== 0) return '—';
-    return `$${amount.toFixed(2)}`;
+  const formatCurrency = (amount?: number | string) => {
+    if (amount === null || amount === undefined) return '—';
+    const numValue = typeof amount === 'string' ? parseFloat(amount) : amount;
+    if (isNaN(numValue)) return '—';
+    return `$${numValue.toFixed(2)}`;
   };
 
-  const formatPercent = (value?: number) => {
-    if (!value && value !== 0) return '—';
-    return `${Math.round(value * 100)}%`;
+  const formatPercent = (value?: number | string) => {
+    if (value === null || value === undefined) return '—';
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(numValue)) return '—';
+    return `${Math.round(numValue * 100)}%`;
   };
 
   const getIntentBadge = (intent?: string) => {
@@ -233,10 +239,17 @@ export default function KeywordsTable({ keywords, onDelete, onRefresh }: Keyword
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-2">
                     <div className="w-20 bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-orange-500 h-2 rounded-full transition-all"
-                        style={{ width: `${(keyword.competition || 0) * 100}%` }}
-                      ></div>
+                      {(() => {
+                        const compValue = typeof keyword.competition === 'string' 
+                          ? parseFloat(keyword.competition) 
+                          : (keyword.competition || 0);
+                        return (
+                          <div
+                            className="bg-orange-500 h-2 rounded-full transition-all"
+                            style={{ width: `${compValue * 100}%` }}
+                          ></div>
+                        );
+                      })()}
                     </div>
                     <span className="text-xs text-gray-600">
                       {formatPercent(keyword.competition)}
