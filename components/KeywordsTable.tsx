@@ -6,7 +6,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Eye, Trash2, RefreshCw, CheckCircle, Clock, AlertCircle, Loader } from 'lucide-react';
+import { Eye, Trash2, RefreshCw, CheckCircle, Clock, AlertCircle, Loader, Target } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Keyword {
@@ -16,6 +16,12 @@ interface Keyword {
   location_name: string;
   status: string;
   project_name?: string;
+  source_keyword_id?: number;
+  source_keyword_name?: string;
+  search_volume?: number;
+  cpc?: number;
+  competition?: number;
+  search_intent?: string;
   tasks_count: number;
   completed_tasks: number;
   created_at: string;
@@ -24,10 +30,10 @@ interface Keyword {
 interface KeywordsTableProps {
   keywords: Keyword[];
   onDelete?: (keywordId: number) => void;
-  onViewResults: (keywordId: number) => void;
+  onRefresh?: () => void;
 }
 
-export default function KeywordsTable({ keywords, onDelete, onViewResults }: KeywordsTableProps) {
+export default function KeywordsTable({ keywords, onDelete, onRefresh }: KeywordsTableProps) {
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const handleDelete = async (keywordId: number) => {
@@ -54,6 +60,10 @@ export default function KeywordsTable({ keywords, onDelete, onViewResults }: Key
 
       if (data.success) {
         toast.success('Ключевое слово удалено');
+        // Обновляем список после удаления
+        if (onRefresh) {
+          onRefresh();
+        }
       } else {
         toast.error(data.error || 'Ошибка при удалении');
       }
@@ -120,6 +130,38 @@ export default function KeywordsTable({ keywords, onDelete, onViewResults }: Key
     );
   }
 
+  const formatNumber = (num?: number) => {
+    if (!num && num !== 0) return '—';
+    return new Intl.NumberFormat('ru-RU').format(num);
+  };
+
+  const formatCurrency = (amount?: number) => {
+    if (!amount && amount !== 0) return '—';
+    return `$${amount.toFixed(2)}`;
+  };
+
+  const formatPercent = (value?: number) => {
+    if (!value && value !== 0) return '—';
+    return `${Math.round(value * 100)}%`;
+  };
+
+  const getIntentBadge = (intent?: string) => {
+    if (!intent) return null;
+    
+    const styles: Record<string, string> = {
+      'Informational': 'bg-blue-100 text-blue-800',
+      'Commercial': 'bg-purple-100 text-purple-800',
+      'Transactional': 'bg-green-100 text-green-800',
+      'Navigational': 'bg-orange-100 text-orange-800',
+    };
+
+    return (
+      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${styles[intent] || 'bg-gray-100 text-gray-800'}`}>
+        {intent}
+      </span>
+    );
+  };
+
   return (
     <div className="overflow-x-auto bg-white rounded-lg shadow">
       <table className="min-w-full divide-y divide-gray-200">
@@ -129,19 +171,16 @@ export default function KeywordsTable({ keywords, onDelete, onViewResults }: Key
               Ключевое слово
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Регион / Язык
+              Частота
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Проект
+              Интент
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Статус
+              CPC
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Прогресс
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Дата создания
+              Конкуренция
             </th>
             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
               Действия
@@ -149,55 +188,62 @@ export default function KeywordsTable({ keywords, onDelete, onViewResults }: Key
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {keywords.map((keyword) => (
-            <tr key={keyword.id} className="hover:bg-gray-50 transition-colors">
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="flex items-center">
-                  <div className="text-sm font-medium text-gray-900">
-                    {keyword.keyword}
+          {keywords.map((keyword) => {
+            const isSource = !keyword.source_keyword_id; // Если нет source_keyword_id - это источник
+            
+            return (
+              <tr 
+                key={keyword.id} 
+                className={`transition-colors ${
+                  isSource 
+                    ? 'bg-blue-50 hover:bg-blue-100' 
+                    : 'hover:bg-gray-50'
+                }`}
+              >
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-2">
+                    {isSource && (
+                      <Target size={16} className="text-blue-600 flex-shrink-0" title="Ключевое слово-источник" />
+                    )}
+                    <div>
+                      <div className={`text-sm ${isSource ? 'font-bold text-gray-900' : 'font-medium text-gray-700'}`}>
+                        {keyword.keyword}
+                      </div>
+                      {keyword.source_keyword_name && (
+                        <div className="text-xs text-gray-500 mt-0.5">
+                          от: {keyword.source_keyword_name}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">{keyword.location_name}</div>
-                <div className="text-xs text-gray-500 uppercase">{keyword.language}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">
-                  {keyword.project_name || (
-                    <span className="text-gray-400 italic">Нет проекта</span>
-                  )}
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                {getStatusBadge(keyword.status)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="flex items-center">
-                  <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full transition-all"
-                      style={{ width: `${(keyword.completed_tasks / keyword.tasks_count) * 100}%` }}
-                    ></div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900 font-medium">
+                    {formatNumber(keyword.search_volume)}
                   </div>
-                  <span className="text-xs text-gray-600">
-                    {keyword.completed_tasks}/{keyword.tasks_count}
-                  </span>
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {formatDate(keyword.created_at)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <div className="flex justify-end gap-2">
-                  <button
-                    onClick={() => onViewResults(keyword.id)}
-                    className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded transition-colors"
-                    title="Просмотреть результаты"
-                    disabled={keyword.status === 'pending'}
-                  >
-                    <Eye size={18} />
-                  </button>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {getIntentBadge(keyword.search_intent)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {formatCurrency(keyword.cpc)}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center gap-2">
+                    <div className="w-20 bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-orange-500 h-2 rounded-full transition-all"
+                        style={{ width: `${(keyword.competition || 0) * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-xs text-gray-600">
+                      {formatPercent(keyword.competition)}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     onClick={() => handleDelete(keyword.id)}
                     className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
@@ -206,10 +252,10 @@ export default function KeywordsTable({ keywords, onDelete, onViewResults }: Key
                   >
                     <Trash2 size={18} />
                   </button>
-                </div>
-              </td>
-            </tr>
-          ))}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

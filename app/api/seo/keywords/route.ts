@@ -233,16 +233,23 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    // Строим запрос
+    // Строим запрос с метриками из seo_results
     let query = `
       SELECT 
         k.*,
         p.name as project_name,
+        sk.keyword as source_keyword_name,
+        r.search_volume,
+        r.cpc,
+        r.competition,
+        r.result_data->>'search_intent' as search_intent,
         COUNT(DISTINCT t.id) as tasks_count,
         COUNT(DISTINCT CASE WHEN t.status = 'completed' THEN t.id END) as completed_tasks
       FROM seo_keywords k
       LEFT JOIN projects p ON k.project_id = p.id
+      LEFT JOIN seo_keywords sk ON k.source_keyword_id = sk.id
       LEFT JOIN seo_tasks t ON k.id = t.keyword_id
+      LEFT JOIN seo_results r ON (k.id = r.keyword_id AND r.endpoint_type = 'keywords_data')
       WHERE k.user_id = ${userId}
     `;
 
@@ -255,7 +262,7 @@ export async function GET(request: NextRequest) {
     }
 
     query += `
-      GROUP BY k.id, p.name
+      GROUP BY k.id, p.name, sk.keyword, r.search_volume, r.cpc, r.competition, r.result_data
       ORDER BY k.created_at DESC
       LIMIT ${limit}
       OFFSET ${offset}
@@ -615,6 +622,7 @@ async function processKeywordSuggestions(
       competition_index: s.competition_index,
     })));
     
+    // Сохраняем raw результаты
     await sql`
       INSERT INTO seo_results (
         keyword_id, task_id, endpoint_type, result_data
@@ -623,6 +631,88 @@ async function processKeywordSuggestions(
         ${keywordId}, ${taskId}, 'keyword_suggestions', ${JSON.stringify(suggestions)}
       )
     `;
+    
+    // 🆕 АВТОМАТИЧЕСКИ СОХРАНЯЕМ related keywords в таблицу seo_keywords
+    console.log(`[SEO] 💾 Auto-saving ${suggestions.length} related keywords to seo_keywords table...`);
+    
+    // Получаем project_id и user_id из исходного ключевого слова
+    const sourceKeywordResult = await sql`
+      SELECT project_id, user_id, language, location_code 
+      FROM seo_keywords 
+      WHERE id = ${keywordId}
+    `;
+    const sourceKeyword = sourceKeywordResult.rows[0];
+    
+    let savedCount = 0;
+    for (const suggestion of suggestions) {
+      try {
+        // Проверяем, не существует ли уже такое ключевое слово в этом проекте
+        const existingCheck = await sql`
+          SELECT id FROM seo_keywords 
+          WHERE keyword = ${suggestion.keyword} 
+          AND project_id = ${sourceKeyword.project_id}
+        `;
+        
+        if (existingCheck.rows.length === 0) {
+          // Сохраняем новое ключевое слово со связью к источнику
+          await sql`
+            INSERT INTO seo_keywords (
+              keyword, language, location_code, user_id, project_id, source_keyword_id
+            )
+            VALUES (
+              ${suggestion.keyword}, 
+              ${sourceKeyword.language}, 
+              ${sourceKeyword.location_code}, 
+              ${sourceKeyword.user_id}, 
+              ${sourceKeyword.project_id}, 
+              ${keywordId}
+            )
+          `;
+          
+          // Сохраняем метрики из suggestion
+          const newKeywordResult = await sql`
+            SELECT id FROM seo_keywords 
+            WHERE keyword = ${suggestion.keyword} 
+            AND project_id = ${sourceKeyword.project_id}
+            ORDER BY created_at DESC
+            LIMIT 1
+          `;
+          const newKeywordId = newKeywordResult.rows[0].id;
+          
+          // Создаем задачу для нового ключевого слова
+          const newTaskResult = await sql`
+            INSERT INTO seo_tasks (keyword_id, endpoint_type, status)
+            VALUES (${newKeywordId}, 'keywords_data', 'completed')
+            RETURNING id
+          `;
+          const newTaskId = newTaskResult.rows[0].id;
+          
+          // Сохраняем результаты
+          const competitionValue = suggestion.competition_index !== undefined 
+            ? suggestion.competition_index / 100 
+            : null;
+            
+          await sql`
+            INSERT INTO seo_results (
+              keyword_id, task_id, endpoint_type, result_data,
+              search_volume, cpc, competition
+            )
+            VALUES (
+              ${newKeywordId}, ${newTaskId}, 'keywords_data', ${JSON.stringify(suggestion)},
+              ${suggestion.search_volume || null}, 
+              ${suggestion.cpc || null}, 
+              ${competitionValue}
+            )
+          `;
+          
+          savedCount++;
+        }
+      } catch (error) {
+        console.error(`[SEO] Error saving related keyword "${suggestion.keyword}":`, error);
+      }
+    }
+    
+    console.log(`[SEO] ✅ Saved ${savedCount} new related keywords out of ${suggestions.length} suggestions`);
   } else {
     console.log(`[SEO] ⚠️  No keyword suggestions returned for "${keyword}"`);
   }
