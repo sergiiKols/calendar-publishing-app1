@@ -6,7 +6,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Eye, Trash2, RefreshCw, CheckCircle, Clock, AlertCircle, Loader, Target } from 'lucide-react';
+import { Eye, Trash2, RefreshCw, CheckCircle, Clock, AlertCircle, Loader, Target, Trash } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Keyword {
@@ -37,6 +37,8 @@ interface KeywordsTableProps {
 
 export default function KeywordsTable({ keywords, onDelete, onRefresh }: KeywordsTableProps) {
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [isDeletingBulk, setIsDeletingBulk] = useState(false);
 
   const handleDelete = async (keywordId: number) => {
     if (!confirm('Вы уверены, что хотите удалить это ключевое слово и все связанные данные?')) {

@@ -256,7 +256,7 @@ export async function GET(request: NextRequest) {
       FROM seo_keywords k
       LEFT JOIN projects p ON k.project_id = p.id
       LEFT JOIN seo_keywords sk ON k.source_keyword_id = sk.id
-      LEFT JOIN categories c ON k.category_id = c.id
+      LEFT JOIN project_categories c ON k.category_id = c.id
       LEFT JOIN seo_tasks t ON k.id = t.keyword_id
       WHERE k.user_id = ${userId}
     `;
