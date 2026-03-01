@@ -700,6 +700,33 @@ async function processKeywordSuggestions(
           const competitionValue = suggestion.competition_index !== undefined 
             ? suggestion.competition_index / 100 
             : null;
+          
+          // Простая эвристика для определения search_intent
+          const inferIntent = (kw: string): string => {
+            const lower = kw.toLowerCase();
+            // Transactional: buy, rent, price, cost, cheap, book, order
+            if (/\b(buy|rent|price|cost|cheap|book|order|purchase|hire|get)\b/.test(lower)) {
+              return 'Transactional';
+            }
+            // Commercial: best, top, review, vs, compare
+            if (/\b(best|top|review|vs|compare|alternative)\b/.test(lower)) {
+              return 'Commercial';
+            }
+            // Navigational: login, website, official, contact
+            if (/\b(login|website|official|contact|location)\b/.test(lower)) {
+              return 'Navigational';
+            }
+            // Default: Informational
+            return 'Informational';
+          };
+          
+          const searchIntent = inferIntent(suggestion.keyword);
+          
+          // Обновляем result_data с добавлением search_intent
+          const enrichedData = {
+            ...suggestion,
+            search_intent: searchIntent
+          };
             
           await sql`
             INSERT INTO seo_results (
@@ -707,7 +734,7 @@ async function processKeywordSuggestions(
               search_volume, cpc, competition
             )
             VALUES (
-              ${newKeywordId}, ${newTaskId}, 'keywords_data', ${JSON.stringify(suggestion)},
+              ${newKeywordId}, ${newTaskId}, 'keywords_data', ${JSON.stringify(enrichedData)},
               ${suggestion.search_volume || null}, 
               ${suggestion.cpc || null}, 
               ${competitionValue}
