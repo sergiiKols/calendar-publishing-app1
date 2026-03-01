@@ -14,8 +14,11 @@ import {
 } from './config';
 
 /**
- * Labs API: Keywords for Keywords
+ * Labs API: Keywords for Keywords (UPDATED - uses Related Keywords API)
  * Генерация идей ключевых слов из seed-слов
+ * 
+ * NOTE: /dataforseo_labs/google/keywords_for_keywords/live endpoint is not available on current plan (returns 404)
+ * Using /dataforseo_labs/google/related_keywords/live as a working alternative
  */
 export async function getLabsKeywordsForKeywords(params: {
   seeds: string[]; // 1-5 seed ключевых слов
@@ -32,46 +35,123 @@ export async function getLabsKeywordsForKeywords(params: {
   const credentials = getDataForSeoCredentials();
   const baseUrl = getDataForSeoBaseUrl();
 
-  const requestBody = [
-    {
-      keywords: params.seeds,
-      language_code: params.language_code,
-      location_code: params.location_code,
-      limit: params.limit || BATCH_CONFIG.LABS_DEFAULT_LIMIT,
-      include_serp_info: true,
-      include_seed_keyword: true,
-      filters: params.filters ? [
-        params.filters.keyword_difficulty_min ? ['keyword_info.keyword_difficulty', '>=', params.filters.keyword_difficulty_min] : null,
-        params.filters.keyword_difficulty_max ? ['keyword_info.keyword_difficulty', '<=', params.filters.keyword_difficulty_max] : null,
-        params.filters.search_volume_min ? ['keyword_info.search_volume', '>=', params.filters.search_volume_min] : null,
-        params.filters.search_volume_max ? ['keyword_info.search_volume', '<=', params.filters.search_volume_max] : null,
-      ].filter(Boolean) : undefined,
-      order_by: ['keyword_info.search_volume,desc'], // сортировка по объему
-    },
-  ];
-
+  // Используем Related Keywords API для каждого seed-слова
+  // Это рабочая альтернатива Keywords for Keywords API
+  const allResults: any[] = [];
+  
   try {
-    const response = await axios.post(
-      `${baseUrl}${DATAFORSEO_ENDPOINTS.LABS_KEYWORDS_FOR_KEYWORDS}`,
-      requestBody,
-      {
-        auth: {
-          username: credentials.login,
-          password: credentials.password,
+    for (const seed of params.seeds) {
+      const requestBody = [
+        {
+          keyword: seed,
+          language_code: params.language_code,
+          location_code: params.location_code,
+          limit: Math.ceil((params.limit || BATCH_CONFIG.LABS_DEFAULT_LIMIT) / params.seeds.length),
+          include_serp_info: true,
+          depth: 1,
         },
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+      ];
 
-    if (response.data.status_code !== 20000) {
-      throw new Error(`Labs API Error: ${response.data.status_message}`);
+      const response = await axios.post(
+        `${baseUrl}${DATAFORSEO_ENDPOINTS.LABS_RELATED_KEYWORDS}`,
+        requestBody,
+        {
+          auth: {
+            username: credentials.login,
+            password: credentials.password,
+          },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.data.status_code !== 20000) {
+        console.error(`Labs API Error for seed "${seed}":`, response.data.status_message);
+        continue;
+      }
+
+      const items = response.data.tasks?.[0]?.result?.[0]?.items || [];
+      
+      // Преобразуем структуру Related Keywords в формат Keywords for Keywords
+      const transformedItems = items.map((item: any) => ({
+        keyword: item.keyword_data?.keyword,
+        keyword_info: item.keyword_data?.keyword_info,
+        keyword_properties: item.keyword_data?.keyword_properties,
+        search_intent_info: item.keyword_data?.search_intent_info,
+        impressions_info: item.keyword_data?.impressions_info,
+        serp_info: item.keyword_data?.serp_info,
+        avg_backlinks_info: item.keyword_data?.avg_backlinks_info,
+      }));
+
+      allResults.push(...transformedItems);
+
+      // Небольшая задержка между запросами
+      if (params.seeds.length > 1) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
     }
 
-    return response.data;
+    // Применяем фильтры если указаны
+    let filteredResults = allResults;
+    if (params.filters) {
+      filteredResults = allResults.filter(item => {
+        const volume = item.keyword_info?.search_volume || 0;
+        const difficulty = item.keyword_properties?.keyword_difficulty || 0;
+        
+        if (params.filters!.search_volume_min && volume < params.filters!.search_volume_min) return false;
+        if (params.filters!.search_volume_max && volume > params.filters!.search_volume_max) return false;
+        if (params.filters!.keyword_difficulty_min && difficulty < params.filters!.keyword_difficulty_min) return false;
+        if (params.filters!.keyword_difficulty_max && difficulty > params.filters!.keyword_difficulty_max) return false;
+        
+        return true;
+      });
+    }
+
+    // Удаляем дубликаты по ключевому слову
+    const uniqueKeywords = new Map();
+    filteredResults.forEach(item => {
+      if (item.keyword && !uniqueKeywords.has(item.keyword)) {
+        uniqueKeywords.set(item.keyword, item);
+      }
+    });
+
+    // Сортируем по search volume
+    const sortedResults = Array.from(uniqueKeywords.values())
+      .sort((a, b) => (b.keyword_info?.search_volume || 0) - (a.keyword_info?.search_volume || 0))
+      .slice(0, params.limit || BATCH_CONFIG.LABS_DEFAULT_LIMIT);
+
+    // Возвращаем в формате совместимом с оригинальным API
+    return {
+      version: '0.1.20260301',
+      status_code: 20000,
+      status_message: 'Ok.',
+      time: '0 sec.',
+      cost: 0,
+      tasks_count: 1,
+      tasks_error: 0,
+      tasks: [
+        {
+          id: 'generated-from-related-keywords',
+          status_code: 20000,
+          status_message: 'Ok.',
+          time: '0 sec.',
+          cost: 0,
+          result_count: 1,
+          path: ['v3', 'dataforseo_labs', 'google', 'related_keywords', 'live'],
+          data: {
+            se_type: 'google',
+            keywords: params.seeds,
+            language_code: params.language_code,
+            location_code: params.location_code,
+          },
+          result: sortedResults,
+        },
+      ],
+    };
+
   } catch (error: any) {
-    console.error('Labs Keywords for Keywords error:', error.response?.data || error.message);
+    console.error('Labs Keywords for Keywords (via Related Keywords) error:', error.response?.data || error.message);
     throw error;
   }
 }

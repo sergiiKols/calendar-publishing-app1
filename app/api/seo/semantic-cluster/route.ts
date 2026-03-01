@@ -43,13 +43,44 @@ export async function POST(request: NextRequest) {
     const {
       seeds,
       language,
-      location_code,
-      location_name,
       project_id,
       target_size,
       competitor_domain,
       filters,
     } = body;
+    
+    // Получаем регион из проекта
+    let location_code: number;
+    let location_name: string;
+    
+    if (project_id) {
+      const projectResult = await sql`
+        SELECT search_location_code FROM projects WHERE id = ${project_id}
+      `;
+      if (projectResult.rows.length === 0) {
+        return NextResponse.json(
+          { success: false, error: 'Project not found' },
+          { status: 404 }
+        );
+      }
+      location_code = projectResult.rows[0].search_location_code || 2840;
+      
+      // Определяем название региона
+      const locationNames: { [key: number]: string } = {
+        2840: 'United States',
+        2144: 'Sri Lanka',
+        2826: 'United Kingdom',
+        2643: 'Russia',
+        2124: 'Canada',
+        2036: 'Australia',
+      };
+      location_name = locationNames[location_code] || 'United States';
+    } else {
+      return NextResponse.json(
+        { success: false, error: 'project_id is required' },
+        { status: 400 }
+      );
+    }
 
     // Валидация
     if (!seeds || !Array.isArray(seeds) || seeds.length === 0) {
@@ -69,9 +100,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!language || !location_code || !location_name) {
+    if (!language) {
       return NextResponse.json(
-        { success: false, error: 'Language and location are required' },
+        { success: false, error: 'Language is required' },
         { status: 400 }
       );
     }
@@ -82,7 +113,7 @@ export async function POST(request: NextRequest) {
     const clusterData = await buildSemanticCluster({
       seeds,
       language_code: language,
-      location_code: parseInt(location_code),
+      location_code: location_code,
       targetSize: target_size || SEMANTIC_CLUSTER_CONFIG.TARGET_CLUSTER_SIZE,
       competitorDomain: competitor_domain,
     });

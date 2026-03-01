@@ -157,16 +157,18 @@ export async function createProject(data: {
   name: string;
   description?: string | null;
   color?: string;
+  search_location_code?: number;
 }) {
   // Try with all columns first
   try {
     const result = await sql`
-      INSERT INTO projects (user_id, name, description, color)
+      INSERT INTO projects (user_id, name, description, color, search_location_code)
       VALUES (
         ${data.user_id},
         ${data.name},
         ${data.description || null},
-        ${data.color || '#3B82F6'}
+        ${data.color || '#3B82F6'},
+        ${data.search_location_code || 2840}
       )
       RETURNING *
     `;
@@ -364,6 +366,7 @@ export async function updateProject(projectId: number, data: {
   description?: string;
   color?: string;
   is_active?: boolean;
+  search_location_code?: number;
 }) {
   const updates: string[] = [];
   const values: any[] = [];
@@ -384,6 +387,10 @@ export async function updateProject(projectId: number, data: {
   if (data.is_active !== undefined) {
     updates.push(`is_active = $${paramIndex++}`);
     values.push(data.is_active);
+  }
+  if (data.search_location_code !== undefined) {
+    updates.push(`search_location_code = $${paramIndex++}`);
+    values.push(data.search_location_code);
   }
 
   if (updates.length === 0) {

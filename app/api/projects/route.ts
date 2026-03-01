@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     
     const body = await request.json();
     
-    const { name, description, color } = body;
+    const { name, description, color, search_location_code } = body;
     
     if (!name) {
       return NextResponse.json(
@@ -101,7 +101,8 @@ export async function POST(request: NextRequest) {
       user_id: userId,
       name,
       description: description || null, // Allow null instead of empty string
-      color: color || '#3B82F6'
+      color: color || '#3B82F6',
+      search_location_code: search_location_code || 2840 // Default to USA
     });
     
     return NextResponse.json({ success: true, project }, { status: 201 });

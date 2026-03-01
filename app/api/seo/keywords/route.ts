@@ -42,7 +42,41 @@ export async function POST(request: NextRequest) {
 
     // Парсим запрос
     const body: SubmitKeywordsRequest = await request.json();
-    const { keywords, language, location_code, location_name, project_id, category_id } = body;
+    const { keywords, language, project_id, category_id } = body;
+    
+    // Получаем регион из проекта вместо передачи в запросе
+    let location_code: string;
+    let location_name: string;
+    
+    if (project_id) {
+      const projectResult = await sql`
+        SELECT search_location_code FROM projects WHERE id = ${project_id}
+      `;
+      if (projectResult.rows.length === 0) {
+        return NextResponse.json(
+          { success: false, error: 'Project not found' },
+          { status: 404 }
+        );
+      }
+      const projectLocationCode = projectResult.rows[0].search_location_code || 2840;
+      location_code = String(projectLocationCode);
+      
+      // Определяем название региона
+      const locationNames: { [key: number]: string } = {
+        2840: 'United States',
+        2144: 'Sri Lanka',
+        2826: 'United Kingdom',
+        2643: 'Russia',
+        2124: 'Canada',
+        2036: 'Australia',
+      };
+      location_name = locationNames[projectLocationCode] || 'United States';
+    } else {
+      return NextResponse.json(
+        { success: false, error: 'project_id is required' },
+        { status: 400 }
+      );
+    }
 
     // Валидация
     if (!keywords || !Array.isArray(keywords) || keywords.length === 0) {

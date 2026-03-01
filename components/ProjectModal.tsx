@@ -5,12 +5,13 @@ import { useState, useEffect } from 'react';
 interface ProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (project: { name: string; description: string; color: string }) => void;
+  onSave: (project: { name: string; description: string; color: string; search_location_code: number }) => void;
   project?: {
     id: number;
     name: string;
     description: string;
     color: string;
+    search_location_code?: number;
   } | null;
 }
 
@@ -25,26 +26,38 @@ const PRESET_COLORS = [
   '#F97316', // orange
 ];
 
+const SEARCH_LOCATIONS = [
+  { code: 2840, name: 'США (USA)', flag: '🇺🇸', description: 'Англоязычная аудитория, большой объем данных' },
+  { code: 2144, name: 'Шри-Ланка (Sri Lanka)', flag: '🇱🇰', description: 'Локальная аудитория, высокая частотность' },
+  { code: 2826, name: 'Великобритания (UK)', flag: '🇬🇧', description: 'Англоязычная аудитория, Европа' },
+  { code: 2643, name: 'Россия (Russia)', flag: '🇷🇺', description: 'Русскоязычная аудитория' },
+  { code: 2124, name: 'Канада (Canada)', flag: '🇨🇦', description: 'Англоязычная и франкоязычная аудитория' },
+  { code: 2036, name: 'Австралия (Australia)', flag: '🇦🇺', description: 'Англоязычная аудитория, Океания' },
+];
+
 export default function ProjectModal({ isOpen, onClose, onSave, project }: ProjectModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState('#3B82F6');
+  const [searchLocationCode, setSearchLocationCode] = useState(2840); // Default: USA
 
   useEffect(() => {
     if (project) {
       setName(project.name);
       setDescription(project.description || '');
       setColor(project.color || '#3B82F6');
+      setSearchLocationCode(project.search_location_code || 2840);
     } else {
       setName('');
       setDescription('');
       setColor('#3B82F6');
+      setSearchLocationCode(2840);
     }
   }, [project, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ name, description, color });
+    onSave({ name, description, color, search_location_code: searchLocationCode });
     onClose();
   };
 
@@ -86,6 +99,31 @@ export default function ProjectModal({ isOpen, onClose, onSave, project }: Proje
                 placeholder="Краткое описание проекта"
                 rows={3}
               />
+            </div>
+
+            {/* Регион поиска для SEO */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                🌍 Регион поиска для SEO *
+              </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Регион определяет, откуда будут браться данные для анализа ключевых слов
+              </p>
+              <select
+                value={searchLocationCode}
+                onChange={(e) => setSearchLocationCode(Number(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                {SEARCH_LOCATIONS.map((location) => (
+                  <option key={location.code} value={location.code}>
+                    {location.flag} {location.name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                {SEARCH_LOCATIONS.find(l => l.code === searchLocationCode)?.description}
+              </p>
             </div>
 
             {/* Выбор цвета */}

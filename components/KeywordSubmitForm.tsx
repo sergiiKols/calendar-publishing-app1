@@ -214,9 +214,8 @@ export default function KeywordSubmitForm({ onClose, onSuccess }: KeywordSubmitF
         body: JSON.stringify({
           keywords: keywordList,
           language: formData.language,
-          location_code: formData.location,
-          location_name: formData.locationName,
           project_id: parseInt(projectId)
+          // location_code и location_name теперь берутся из проекта на сервере
         })
       });
 

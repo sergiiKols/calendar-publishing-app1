@@ -108,13 +108,14 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, description, color, is_active } = body;
+    const { name, description, color, is_active, search_location_code } = body;
 
     const project = await updateProject(projectId, {
       name,
       description,
       color,
-      is_active
+      is_active,
+      search_location_code
     });
     
     return NextResponse.json({ project });

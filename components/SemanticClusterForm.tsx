@@ -95,10 +95,9 @@ export default function SemanticClusterForm({ onClose, onSuccess }: SemanticClus
       const requestBody: any = {
         seeds: seedList,
         language,
-        location_code: locationCode,
-        location_name: locationName,
         project_id: projectId,
         target_size: targetSize,
+        // location_code и location_name теперь берутся из проекта на сервере
       };
 
       if (competitorDomain) {
