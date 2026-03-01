@@ -251,6 +251,7 @@ export async function GET(request: NextRequest) {
         (SELECT r.cpc FROM seo_results r WHERE r.keyword_id = k.id AND r.endpoint_type = 'keywords_data' LIMIT 1) as cpc,
         (SELECT r.competition FROM seo_results r WHERE r.keyword_id = k.id AND r.endpoint_type = 'keywords_data' LIMIT 1) as competition,
         (SELECT r.result_data->>'search_intent' FROM seo_results r WHERE r.keyword_id = k.id AND r.endpoint_type = 'keywords_data' LIMIT 1) as search_intent,
+        (SELECT COUNT(*) FROM seo_keywords WHERE source_keyword_id = k.id) as related_count,
         COUNT(DISTINCT t.id) as tasks_count,
         COUNT(DISTINCT CASE WHEN t.status = 'completed' THEN t.id END) as completed_tasks
       FROM seo_keywords k

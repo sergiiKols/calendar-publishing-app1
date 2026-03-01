@@ -20,6 +20,7 @@ interface Keyword {
   category_name?: string;
   source_keyword_id?: number;
   source_keyword_name?: string;
+  related_count?: number;
   search_volume?: number | string;
   cpc?: number | string;
   competition?: number | string;
