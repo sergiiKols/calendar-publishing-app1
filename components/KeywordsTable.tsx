@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Eye, Trash2, RefreshCw, CheckCircle, Clock, AlertCircle, Loader, Target, Trash } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -382,6 +382,36 @@ export default function KeywordsTable({ keywords, onDelete, onRefresh }: Keyword
                 <option value="alpha">По алфавиту ↑</option>
               </select>
             </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600">Фильтры:</label>
+              <input
+                type="number"
+                value={minVolume}
+                onChange={(e) => setMinVolume(Number(e.target.value))}
+                placeholder="Мин. частота"
+                className="w-28 px-2 py-1.5 border border-gray-300 rounded-lg text-sm"
+              />
+              <input
+                type="number"
+                value={maxCpc}
+                onChange={(e) => setMaxCpc(Number(e.target.value))}
+                placeholder="Макс. CPC"
+                step="0.1"
+                className="w-28 px-2 py-1.5 border border-gray-300 rounded-lg text-sm"
+              />
+              <button
+                onClick={() => {
+                  setMinVolume(0);
+                  setMaxCpc(999);
+                  setMinCompetition(0);
+                  setMaxCompetition(100);
+                }}
+                className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900"
+              >
+                Сбросить
+              </button>
+            </div>
           </>
         )}
       </div>
@@ -443,18 +473,64 @@ export default function KeywordsTable({ keywords, onDelete, onRefresh }: Keyword
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {organizedKeywords.map((keyword) => {
-            const isSource = !keyword.source_keyword_id; // Если нет source_keyword_id - это источник
+        <tbody className="bg-white">
+          {organizedKeywords.map((keyword, index) => {
+            const isSource = !keyword.source_keyword_id;
+            const prevKeyword = index > 0 ? organizedKeywords[index - 1] : null;
+            const isFirstInGroup = isSource || (prevKeyword && !prevKeyword.source_keyword_id);
             
+            // Если это источник - показываем как заголовок группы
+            if (isSource && groupBySource) {
+              return (
+                <React.Fragment key={`group-${keyword.id}`}>
+                  {/* Заголовок группы */}
+                  <tr className="bg-gradient-to-r from-blue-100 to-blue-50 border-t-2 border-blue-400">
+                    <td colSpan={6} className="px-6 py-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Target size={20} className="text-blue-600" />
+                          <div>
+                            <div className="text-base font-bold text-gray-900">
+                              {keyword.keyword}
+                            </div>
+                            <div className={`text-sm font-medium mt-0.5 ${
+                              (keyword.related_count || 0) === 0 
+                                ? 'text-red-600' 
+                                : 'text-green-600'
+                            }`}>
+                              {keyword.related_count === 0 ? (
+                                <>⚠️ 0 related keywords - не дало результатов</>
+                              ) : (
+                                <>→ {keyword.related_count} related keywords найдено</>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDelete(keyword.id)}
+                          className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded transition-colors"
+                          title="Удалить источник и все related"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </React.Fragment>
+              );
+            }
+            
+            // Обычная строка (related keyword или без группировки)
             return (
               <tr 
                 key={keyword.id} 
                 className={`transition-colors ${
-                  isSource 
+                  !groupBySource && isSource
                     ? 'bg-blue-50 hover:bg-blue-100 border-t-2 border-blue-300' 
                     : 'hover:bg-gray-50'
-                } ${selectedIds.has(keyword.id) ? 'ring-2 ring-blue-500' : ''}`}
+                } ${selectedIds.has(keyword.id) ? 'ring-2 ring-blue-500' : ''} ${
+                  isFirstInGroup && !isSource ? 'border-t border-gray-200' : ''
+                }`}
               >
                 <td className="px-6 py-4">
                   <input
@@ -476,24 +552,6 @@ export default function KeywordsTable({ keywords, onDelete, onRefresh }: Keyword
                       <div className={`text-sm ${isSource ? 'font-bold text-gray-900' : 'font-medium text-gray-700'}`}>
                         {keyword.keyword}
                       </div>
-                      {keyword.source_keyword_name && (
-                        <div className="text-xs text-gray-500 mt-0.5">
-                          от: {keyword.source_keyword_name}
-                        </div>
-                      )}
-                      {isSource && (
-                        <div className={`text-xs mt-1 font-medium ${
-                          (keyword.related_count || 0) === 0 
-                            ? 'text-red-600' 
-                            : 'text-green-600'
-                        }`}>
-                          {keyword.related_count === 0 ? (
-                            <>⚠️ 0 related keywords</>
-                          ) : (
-                            <>→ {keyword.related_count} related keywords</>
-                          )}
-                        </div>
-                      )}
                     </div>
                   </div>
                 </td>
