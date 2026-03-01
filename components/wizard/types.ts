@@ -34,11 +34,10 @@ export interface StepValidation {
   message?: string;
 }
 
-export type WizardStep = 1 | 2 | 3 | 4;
+export type WizardStep = 1 | 2 | 3;
 
 export const WIZARD_STEPS = [
   'Проект',
-  'Настройки',
   'Ключевые слова',
   'Подтверждение'
 ] as const;

@@ -13,7 +13,6 @@ import { WizardFormData, WizardStep, RequestHistory as RequestHistoryType } from
 import StepIndicator from './wizard/StepIndicator';
 import FormNavigation from './wizard/FormNavigation';
 import StepProject from './wizard/steps/StepProject';
-import StepSettings from './wizard/steps/StepSettings';
 import StepKeywords from './wizard/steps/StepKeywords';
 import StepConfirm from './wizard/steps/StepConfirm';
 import RequestHistory, { saveToHistory } from './wizard/RequestHistory';
@@ -110,7 +109,7 @@ export default function KeywordSubmitForm({ onClose, onSuccess }: KeywordSubmitF
       locationName: item.locationName,
       keywords: '' // Не загружаем ключевые слова для безопасности
     });
-    setCurrentStep(3); // Переходим сразу на ввод ключевых слов
+    setCurrentStep(2); // Переходим сразу на ввод ключевых слов (теперь шаг 2)
     toast.success('Настройки загружены из истории');
   };
 
@@ -126,15 +125,6 @@ export default function KeywordSubmitForm({ onClose, onSuccess }: KeywordSubmitF
         return { isValid: true };
       
       case 2:
-        if (!formData.language) {
-          return { isValid: false, message: 'Выберите язык' };
-        }
-        if (!formData.location) {
-          return { isValid: false, message: 'Выберите локацию' };
-        }
-        return { isValid: true };
-      
-      case 3:
         const keywordsList = formData.keywords.split('\n').filter(k => k.trim());
         if (keywordsList.length === 0) {
           return { isValid: false, message: 'Введите хотя бы одно ключевое слово' };
@@ -144,7 +134,7 @@ export default function KeywordSubmitForm({ onClose, onSuccess }: KeywordSubmitF
         }
         return { isValid: true };
       
-      case 4:
+      case 3:
         return { isValid: true };
       
       default:
@@ -179,7 +169,7 @@ export default function KeywordSubmitForm({ onClose, onSuccess }: KeywordSubmitF
   };
 
   const handleSubmit = async () => {
-    const validation = validateStep(3); // Валидируем ключевые слова
+    const validation = validateStep(2); // Валидируем ключевые слова (теперь шаг 2)
     if (!validation.isValid) {
       toast.error(validation.message || 'Некорректные данные');
       return;
@@ -259,7 +249,7 @@ export default function KeywordSubmitForm({ onClose, onSuccess }: KeywordSubmitF
       if (e.key === 'Escape') {
         handleCancel();
       } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-        if (currentStep < 4) {
+        if (currentStep < 3) {
           handleNext();
         } else {
           handleSubmit();
@@ -346,24 +336,13 @@ export default function KeywordSubmitForm({ onClose, onSuccess }: KeywordSubmitF
             )}
 
             {currentStep === 2 && (
-              <StepSettings
-                language={formData.language}
-                location={formData.location}
-                languageOptions={languageOptions}
-                locationOptions={locationOptions}
-                onLanguageChange={(lang) => setFormData({ ...formData, language: lang })}
-                onLocationChange={(code, name) => setFormData({ ...formData, location: code, locationName: name })}
-              />
-            )}
-
-            {currentStep === 3 && (
               <StepKeywords
                 keywords={formData.keywords}
                 onKeywordsChange={(kw) => setFormData({ ...formData, keywords: kw })}
               />
             )}
 
-            {currentStep === 4 && (
+            {currentStep === 3 && (
               <StepConfirm
                 formData={formData}
                 projectName={getProjectName()}
