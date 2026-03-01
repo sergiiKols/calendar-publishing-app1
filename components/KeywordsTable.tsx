@@ -16,6 +16,8 @@ interface Keyword {
   location_name: string;
   status: string;
   project_name?: string;
+  category_id?: number;
+  category_name?: string;
   source_keyword_id?: number;
   source_keyword_name?: string;
   search_volume?: number | string;

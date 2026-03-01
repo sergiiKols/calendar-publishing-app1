@@ -240,16 +240,17 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
 
     // Строим запрос с метриками из seo_results и category_id
+    // Используем подзапрос для получения ОДНОЙ строки метрик на ключевое слово
     let query = `
       SELECT 
         k.*,
         p.name as project_name,
         sk.keyword as source_keyword_name,
         c.name as category_name,
-        r.search_volume,
-        r.cpc,
-        r.competition,
-        r.result_data->>'search_intent' as search_intent,
+        (SELECT r.search_volume FROM seo_results r WHERE r.keyword_id = k.id AND r.endpoint_type = 'keywords_data' LIMIT 1) as search_volume,
+        (SELECT r.cpc FROM seo_results r WHERE r.keyword_id = k.id AND r.endpoint_type = 'keywords_data' LIMIT 1) as cpc,
+        (SELECT r.competition FROM seo_results r WHERE r.keyword_id = k.id AND r.endpoint_type = 'keywords_data' LIMIT 1) as competition,
+        (SELECT r.result_data->>'search_intent' FROM seo_results r WHERE r.keyword_id = k.id AND r.endpoint_type = 'keywords_data' LIMIT 1) as search_intent,
         COUNT(DISTINCT t.id) as tasks_count,
         COUNT(DISTINCT CASE WHEN t.status = 'completed' THEN t.id END) as completed_tasks
       FROM seo_keywords k
@@ -257,7 +258,6 @@ export async function GET(request: NextRequest) {
       LEFT JOIN seo_keywords sk ON k.source_keyword_id = sk.id
       LEFT JOIN categories c ON k.category_id = c.id
       LEFT JOIN seo_tasks t ON k.id = t.keyword_id
-      LEFT JOIN seo_results r ON (k.id = r.keyword_id AND r.endpoint_type = 'keywords_data')
       WHERE k.user_id = ${userId}
     `;
 
@@ -270,7 +270,7 @@ export async function GET(request: NextRequest) {
     }
 
     query += `
-      GROUP BY k.id, p.name, sk.keyword, c.name, r.search_volume, r.cpc, r.competition, r.result_data
+      GROUP BY k.id, p.name, sk.keyword, c.name
       ORDER BY k.created_at DESC
       LIMIT ${limit}
       OFFSET ${offset}
