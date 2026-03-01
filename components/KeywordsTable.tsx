@@ -46,6 +46,10 @@ export default function KeywordsTable({ keywords, onDelete, onRefresh }: Keyword
   const [groupBySource, setGroupBySource] = useState(true);
   const [sourceSortBy, setSourceSortBy] = useState<SourceSortOption>('count');
   const [relatedSortBy, setRelatedSortBy] = useState<RelatedSortOption>('volume');
+  const [minVolume, setMinVolume] = useState<number>(0);
+  const [maxCpc, setMaxCpc] = useState<number>(999);
+  const [minCompetition, setMinCompetition] = useState<number>(0);
+  const [maxCompetition, setMaxCompetition] = useState<number>(100);
 
   const toggleSelectAll = () => {
     if (selectedIds.size === keywords.length) {
@@ -224,16 +228,36 @@ export default function KeywordsTable({ keywords, onDelete, onRefresh }: Keyword
     return `${Math.round(numValue * 100)}%`;
   };
 
+  // Фильтрация по метрикам
+  const filterKeyword = (keyword: Keyword) => {
+    // Источники всегда показываем
+    if (!keyword.source_keyword_id) return true;
+
+    const volume = typeof keyword.search_volume === 'string' ? parseFloat(keyword.search_volume) : (keyword.search_volume || 0);
+    const cpc = typeof keyword.cpc === 'string' ? parseFloat(keyword.cpc) : (keyword.cpc || 0);
+    const comp = typeof keyword.competition === 'string' ? parseFloat(keyword.competition) : (keyword.competition || 0);
+
+    if (volume < minVolume) return false;
+    if (cpc > maxCpc) return false;
+    if (comp < minCompetition / 100) return false;
+    if (comp > maxCompetition / 100) return false;
+
+    return true;
+  };
+
   // Группировка и сортировка
   const organizeKeywords = () => {
+    // Применяем фильтры
+    const filteredKeywords = keywords.filter(filterKeyword);
+
     if (!groupBySource) {
       // Без группировки - просто сортируем по дате
-      return keywords;
+      return filteredKeywords;
     }
 
     // Разделяем на источники и related
-    const sources = keywords.filter(k => !k.source_keyword_id);
-    const related = keywords.filter(k => k.source_keyword_id);
+    const sources = filteredKeywords.filter(k => !k.source_keyword_id);
+    const related = filteredKeywords.filter(k => k.source_keyword_id);
 
     // Сортируем источники
     const sortedSources = [...sources].sort((a, b) => {
@@ -317,6 +341,51 @@ export default function KeywordsTable({ keywords, onDelete, onRefresh }: Keyword
 
   return (
     <div className="space-y-4">
+      {/* Панель управления сортировкой */}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-wrap items-center gap-4">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={groupBySource}
+            onChange={(e) => setGroupBySource(e.target.checked)}
+            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+          />
+          <span className="text-sm font-medium text-gray-700">Группировать по источнику</span>
+        </label>
+
+        {groupBySource && (
+          <>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600">Сортировка источников:</label>
+              <select
+                value={sourceSortBy}
+                onChange={(e) => setSourceSortBy(e.target.value as SourceSortOption)}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="count">По количеству related ↓</option>
+                <option value="date">По дате создания ↓</option>
+                <option value="alpha">По алфавиту ↑</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600">Сортировка внутри групп:</label>
+              <select
+                value={relatedSortBy}
+                onChange={(e) => setRelatedSortBy(e.target.value as RelatedSortOption)}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="volume">По частоте ↓</option>
+                <option value="cpc">По CPC ↓</option>
+                <option value="competition">По конкуренции ↓</option>
+                <option value="intent">По интенту</option>
+                <option value="alpha">По алфавиту ↑</option>
+              </select>
+            </div>
+          </>
+        )}
+      </div>
+
       {/* Панель массовых действий */}
       {selectedIds.size > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
@@ -375,7 +444,7 @@ export default function KeywordsTable({ keywords, onDelete, onRefresh }: Keyword
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {keywords.map((keyword) => {
+          {organizedKeywords.map((keyword) => {
             const isSource = !keyword.source_keyword_id; // Если нет source_keyword_id - это источник
             
             return (
@@ -383,7 +452,7 @@ export default function KeywordsTable({ keywords, onDelete, onRefresh }: Keyword
                 key={keyword.id} 
                 className={`transition-colors ${
                   isSource 
-                    ? 'bg-blue-50 hover:bg-blue-100' 
+                    ? 'bg-blue-50 hover:bg-blue-100 border-t-2 border-blue-300' 
                     : 'hover:bg-gray-50'
                 } ${selectedIds.has(keyword.id) ? 'ring-2 ring-blue-500' : ''}`}
               >
@@ -395,10 +464,13 @@ export default function KeywordsTable({ keywords, onDelete, onRefresh }: Keyword
                     className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   />
                 </td>
-                <td className="px-6 py-4">
+                <td className={`py-4 ${isSource ? 'px-6' : 'px-12'}`}>
                   <div className="flex items-center gap-2">
                     {isSource && (
                       <Target size={16} className="text-blue-600 flex-shrink-0" title="Ключевое слово-источник" />
+                    )}
+                    {!isSource && groupBySource && (
+                      <span className="text-gray-400 text-xs mr-2">└─</span>
                     )}
                     <div className="flex-1">
                       <div className={`text-sm ${isSource ? 'font-bold text-gray-900' : 'font-medium text-gray-700'}`}>
