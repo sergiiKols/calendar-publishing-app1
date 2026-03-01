@@ -643,9 +643,9 @@ async function processKeywordSuggestions(
     // 🆕 АВТОМАТИЧЕСКИ СОХРАНЯЕМ related keywords в таблицу seo_keywords
     console.log(`[SEO] 💾 Auto-saving ${suggestions.length} related keywords to seo_keywords table...`);
     
-    // Получаем project_id и user_id из исходного ключевого слова
+    // Получаем project_id, user_id и category_id из исходного ключевого слова
     const sourceKeywordResult = await sql`
-      SELECT project_id, user_id, language, location_code 
+      SELECT project_id, user_id, language, location_code, category_id 
       FROM seo_keywords 
       WHERE id = ${keywordId}
     `;
@@ -662,10 +662,10 @@ async function processKeywordSuggestions(
         `;
         
         if (existingCheck.rows.length === 0) {
-          // Сохраняем новое ключевое слово со связью к источнику
+          // Сохраняем новое ключевое слово со связью к источнику И с той же категорией
           await sql`
             INSERT INTO seo_keywords (
-              keyword, language, location_code, user_id, project_id, source_keyword_id
+              keyword, language, location_code, user_id, project_id, source_keyword_id, category_id
             )
             VALUES (
               ${suggestion.keyword}, 
@@ -673,7 +673,8 @@ async function processKeywordSuggestions(
               ${sourceKeyword.location_code}, 
               ${sourceKeyword.user_id}, 
               ${sourceKeyword.project_id}, 
-              ${keywordId}
+              ${keywordId},
+              ${sourceKeyword.category_id || null}
             )
           `;
           
