@@ -17,7 +17,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 
 # Cache buster - change this to force rebuild
-ARG CACHEBUST=2026-03-01-REGION-SELECTION
+ARG CACHEBUST=2026-03-01-FINAL-FIX
 RUN echo "Cache bust: $CACHEBUST"
 COPY . .
 
