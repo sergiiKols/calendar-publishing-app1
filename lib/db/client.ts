@@ -347,9 +347,14 @@ export async function getOrCreateProjectFromSMI(data: {
 
 export async function getProjects(userId: number) {
   const result = await sql`
-    SELECT * FROM projects 
-    WHERE user_id = ${userId} AND is_active = true
-    ORDER BY created_at DESC
+    SELECT 
+      p.*,
+      COUNT(DISTINCT k.id) as keywords_count
+    FROM projects p
+    LEFT JOIN seo_keywords k ON p.id = k.project_id
+    WHERE p.user_id = ${userId} AND p.is_active = true
+    GROUP BY p.id
+    ORDER BY p.created_at DESC
   `;
   return result.rows;
 }
